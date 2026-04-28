@@ -22,26 +22,26 @@
 
 按下面顺序，从左到右组装。标「必」的一个都不能少，「选」的每次随机挑 3-5 个加上：
 
-| 步骤 | 槽位 | 必/选 | 示例 |
-|:--:|------|:--:|------|
-| 1 | **场景+主题** | 必 | `love hotel pink room, cheating wife` |
-| 2 | **景别** | 必 | `medium shot, waist-up` |
-| 3 | **拍摄视角** | 必 | `POV, from below` |
-| 4 | **拍摄设备** | 必 | `iPhone photo, selfie` |
-| 5 | **裸露+服装** | 必 | `topless, bare breasts, skirt hiked up` |
-| 6 | 外貌体型 | 选 | `petite, pale skin, large breasts` |
-| 7 | **姿势动作** | 必 | `sitting on desk, legs spread` |
-| 8 | **表情眼神** | 必 | `shy expression, blushing, looking away` |
-| 9 | **光影氛围** | 必 | `window side light, warm glow` |
-| 10 | 镜头焦段 | 选 | `85mm portrait lens` |
-| 11 | 风格标签 | 选 | `cinematic film still, gravure idol` |
-| 12 | 胶片/滤镜 | 选 | `Kodak Portra 400, warm skin tones` |
-| 13 | 妆容 | 选 | `natural makeup, smudged red lipstick` |
-| 14 | 发型 | 选 | `long black hair, messy bun` |
-| 15 | 瑕疵细节 | 选 | `beauty mark on cheek, sweat beads` |
-| 16 | 液体痕迹 | 选 | `glistening sweat, thin saliva trail` |
-| 17 | 饰品配件 | 选 | `thin gold chain necklace` |
-| 18 | **画质强化** | 必 | `masterpiece, best quality, 8k, photorealistic` |
+| 步骤 | 槽位                | 必/选 | 示例                                              |
+| :--: | ------------------- | :---: | ------------------------------------------------- |
+|  1  | **场景+主题** |  必  | `love hotel pink room, cheating wife`           |
+|  2  | **景别**      |  必  | `medium shot, waist-up`                         |
+|  3  | **拍摄视角**  |  必  | `POV, from below`                               |
+|  4  | **拍摄设备**  |  必  | `iPhone photo, selfie`                          |
+|  5  | **裸露+服装** |  必  | `topless, bare breasts, skirt hiked up`         |
+|  6  | 外貌体型            |  选  | `petite, pale skin, large breasts`              |
+|  7  | **姿势动作**  |  必  | `sitting on desk, legs spread`                  |
+|  8  | **表情眼神**  |  必  | `shy expression, blushing, looking away`        |
+|  9  | **光影氛围**  |  必  | `window side light, warm glow`                  |
+|  10  | 镜头焦段            |  选  | `85mm portrait lens`                            |
+|  11  | 风格标签            |  选  | `cinematic film still, gravure idol`            |
+|  12  | 胶片/滤镜           |  选  | `Kodak Portra 400, warm skin tones`             |
+|  13  | 妆容                |  选  | `natural makeup, smudged red lipstick`          |
+|  14  | 发型                |  选  | `long black hair, messy bun`                    |
+|  15  | 瑕疵细节            |  选  | `beauty mark on cheek, sweat beads`             |
+|  16  | 液体痕迹            |  选  | `glistening sweat, thin saliva trail`           |
+|  17  | 饰品配件            |  选  | `thin gold chain necklace`                      |
+|  18  | **画质强化**  |  必  | `masterpiece, best quality, 8k, photorealistic` |
 
 > 整体控制在 150-250 英文词，现代模型处理长提示词无压力，优先保证画面丰富度。
 
@@ -131,7 +131,7 @@ templates-jav/
 
 12 种专业布光技法（发丝光/伦勃朗光/蝴蝶光/环形光等）+ 电影感布光 + 情色专用光影 + 场景×光影匹配速查表。
 
-### 07 — 镜头风格胶片 🎞️
+### 07 — 风格胶片 🎞️
 
 焦段分类（广角/标准/长焦/微距）、构图方式（三分法/对称/引导线等）、15 种胶片模拟（富士/柯达/理光 GR）、9 大电影镜头厂商（安琴/阿莱/库克/蔡司/Panavision/徕卡/适马/佳能/尼康）。
 
@@ -164,7 +164,7 @@ templates-jav/
 | 推荐等级 | 模型                                 | 上下文 | 说明                                                                  |
 | :------: | ------------------------------------ | ------ | --------------------------------------------------------------------- |
 |  ⭐⭐⭐  | **DeepSeek V4 Pro / V4 Flash** | 1M     | 🏆 首选推荐。极强理解力+精准规则遵循，内容限制宽松，NSFW 生成质量最高 |
-|  ⭐⭐⭐  | 小米 MiMo-V2.5 / MiMo-V2.5 Pro       | 1M     | 中文理解极好，内容限制宽松，Pro版推理更强，适合 NSFW 生成              |
+|  ⭐⭐⭐  | 小米 MiMo-V2.5 / MiMo-V2.5 Pro       | 1M     | 中文理解极好，内容限制宽松，Pro版推理更强，适合 NSFW 生成             |
 |  ⭐⭐⭐  | Claude Opus 4.6 / Sonnet 4.6         | 1M     | 最佳理解力，精准遵循组合规则，内容限制少                              |
 |  ⭐⭐⭐  | Gemini 3 Pro / 3 Flash               | 1M     | 超长上下文，适合一次读取全部模板，NSFW 限制比旧版更宽松               |
 |   ⭐⭐   | GPT-5X                               | 1M     | 内容审查严格，NSFW 可能被拒或删减。需配合越狱 prompt                  |
@@ -179,14 +179,14 @@ templates-jav/
 
 负面提示词（Negative Prompt）并非所有 AI 绘画模型都支持：
 
-| 模型/平台                             | 负面提示词支持 | 说明                    |
-| ------------------------------------- | :------------: | ----------------------- |
-| **ComfyUI**                     |       ✅       | 节点化，可精细控制权重  |
-| **NovelAI**                     |       ✅       | 基于 SD 架构            |
-| **Midjourney**                  |      ⚠️      | `--no` 参数，效果有限 |
-| **Flux**                        |      ⚠️      | 取决于前端实现          |
-| **DALL·E 3**                   |       ❌       | 无负面提示词机制        |
-| **Z Image Turbo**               |       ❌       | 填了也会被忽略          |
+| 模型/平台               | 负面提示词支持 | 说明                    |
+| ----------------------- | :------------: | ----------------------- |
+| **ComfyUI**       |       ✅       | 节点化，可精细控制权重  |
+| **NovelAI**       |       ✅       | 基于 SD 架构            |
+| **Midjourney**    |      ⚠️      | `--no` 参数，效果有限 |
+| **Flux**          |      ⚠️      | 取决于前端实现          |
+| **DALL·E 3**     |       ❌       | 无负面提示词机制        |
+| **Z Image Turbo** |       ❌       | 填了也会被忽略          |
 
 ### 💡 Z Image Turbo 用户注意
 
