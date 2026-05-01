@@ -188,6 +188,7 @@ templates-jav/
 - [Draw Things](https://github.com/drawthingsai/draw-things-community) — iOS/macOS 本地 AI 绘画
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI) — 节点式 AI 绘画前端
 - [Civitai](https://civitai.com) — 模型和 LoRA 分享社区
+- [GirlsLike LoRA Gallery](https://huggingface.co/spaces/ifmylove2011/girlslike_lora_gallery) — 明星 LoRA 画廊
 - [OpenClaw](https://github.com/openclaw/openclaw) — AI Agent 框架（本模板原生平台）
 
 ---
