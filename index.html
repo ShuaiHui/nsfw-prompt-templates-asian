@@ -1,638 +1,485 @@
-import { useState, useEffect, useRef } from "react";
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NSFW Prompt Templates Asian</title>
+  <!-- 引入 React、ReactDOM 和 Babel standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
 
-/* ══════════════════════════════════════════════════════════
-   DATA
-══════════════════════════════════════════════════════════ */
-const DEFAULT_DATA = [
-  { id:"00", label:"范例",     sub:"00", icon:"✦",
-    categories:[
-      { id:"00-01", label:"基础示例", phrases:["masterpiece","best quality","ultra-detailed","8k uhd","photorealistic"] },
-      { id:"00-02", label:"质量标签", phrases:["highres","absurdres","extremely detailed","intricate details","sharp focus"] },
-    ]},
-  { id:"01", label:"场景主题", sub:"01", icon:"🏠",
-    categories:[
-      { id:"01-01", label:"室内", phrases:["bedroom","hotel room","bathroom","living room","studio apartment","luxury suite"] },
-      { id:"01-02", label:"室外", phrases:["rooftop","garden","balcony","beach","forest clearing","alley"] },
-      { id:"01-03", label:"特殊", phrases:["onsen","love hotel","changing room","school corridor","office after hours"] },
-    ]},
-  { id:"02", label:"景别构图", sub:"02", icon:"🎞",
-    categories:[
-      { id:"02-01", label:"景别", phrases:["close-up","medium shot","full body","cowboy shot","bust shot","extreme close-up"] },
-      { id:"02-02", label:"构图", phrases:["rule of thirds","centered composition","dutch angle","overhead view","from below","from behind"] },
-      { id:"02-03", label:"视角", phrases:["pov","first person view","bird's eye view","worm's eye view","side view"] },
-    ]},
-  { id:"03", label:"光线打光", sub:"03", icon:"☀️",
-    categories:[
-      { id:"03-01", label:"自然光", phrases:["sunlight","golden hour","moonlight","overcast light","dappled light","window light"] },
-      { id:"03-02", label:"人工光", phrases:["studio lighting","rim lighting","backlit","neon lights","candlelight","soft box lighting"] },
-      { id:"03-03", label:"光效",   phrases:["lens flare","volumetric lighting","god rays","bokeh","light particles","glowing"] },
-    ]},
-  { id:"04", label:"画风渲染", sub:"04", icon:"🎨",
-    categories:[
-      { id:"04-01", label:"写实", phrases:["photorealistic","hyperrealistic","cinematic","film grain","RAW photo","DSLR"] },
-      { id:"04-02", label:"插画", phrases:["anime style","manga style","cel shading","flat design","illustration","line art"] },
-      { id:"04-03", label:"引擎", phrases:["unreal engine 5","octane render","cinema 4d","blender render","ray tracing"] },
-    ]},
-  { id:"05", label:"人物外貌", sub:"05", icon:"👤",
-    categories:[
-      { id:"05-01", label:"发型", phrases:["long black hair","short bob","twin tails","ponytail","bangs","wavy hair","brown hair"] },
-      { id:"05-02", label:"眼睛", phrases:["large eyes","almond eyes","double eyelids","brown eyes","doe eyes"] },
-      { id:"05-03", label:"体型", phrases:["slim","petite","athletic build","tall","hourglass figure"] },
-    ]},
-  { id:"06", label:"服装配饰", sub:"06", icon:"👗",
-    categories:[
-      { id:"06-01", label:"日常", phrases:["school uniform","office wear","casual wear","sundress","jeans and t-shirt"] },
-      { id:"06-02", label:"特殊", phrases:["qipao","kimono","yukata","maid outfit","nurse uniform","bunny suit"] },
-      { id:"06-03", label:"配饰", phrases:["choker","earrings","hair ribbon","glasses","anklet","bracelet"] },
-    ]},
-  { id:"07", label:"表情神态", sub:"07", icon:"😊",
-    categories:[
-      { id:"07-01", label:"表情", phrases:["smile","shy expression","surprised","blushing","pouting","serious"] },
-      { id:"07-02", label:"情绪", phrases:["confident","embarrassed","playful","dreamy","seductive look","innocent"] },
-    ]},
-  { id:"08", label:"姿势动作", sub:"08", icon:"🧍",
-    categories:[
-      { id:"08-01", label:"站姿", phrases:["standing","leaning against wall","hands on hips","arms crossed","one hand raised"] },
-      { id:"08-02", label:"坐姿", phrases:["sitting","kneeling","cross-legged","sitting on bed","perched on edge"] },
-      { id:"08-03", label:"躺姿", phrases:["lying down","lying on back","curled up","sprawled","side-lying"] },
-    ]},
-  { id:"09", label:"色调滤镜", sub:"09", icon:"🎭",
-    categories:[
-      { id:"09-01", label:"冷暖", phrases:["warm tones","cool tones","golden tones","blue hour","rose tint"] },
-      { id:"09-02", label:"特效", phrases:["vignette","chromatic aberration","film grain","bloom effect","desaturated"] },
-      { id:"09-03", label:"基调", phrases:["dreamy atmosphere","moody","vibrant","soft pastel","high contrast","cinematic grade"] },
-    ]},
-  { id:"10", label:"镜头参数", sub:"10", icon:"📷",
-    categories:[
-      { id:"10-01", label:"焦距", phrases:["35mm lens","50mm lens","85mm lens","135mm portrait lens","wide angle 24mm"] },
-      { id:"10-02", label:"景深", phrases:["f/1.4 bokeh","f/1.8 depth of field","shallow depth of field","deep focus","tilt-shift"] },
-      { id:"10-03", label:"快门", phrases:["motion blur","frozen motion","long exposure","crisp detail"] },
-    ]},
-  { id:"11", label:"负面提示", sub:"11", icon:"🚫",
-    categories:[
-      { id:"11-01", label:"质量", phrases:["(worst quality:2)","(low quality:2)","blurry","jpeg artifacts","watermark","text"] },
-      { id:"11-02", label:"解剖", phrases:["bad anatomy","extra limbs","missing fingers","distorted face","deformed hands"] },
-      { id:"11-03", label:"其他", phrases:["ugly","duplicate","error","out of frame","cropped","username"] },
-    ]},
-  { id:"12", label:"氛围道具", sub:"12", icon:"🌸",
-    categories:[
-      { id:"12-01", label:"道具", phrases:["wine glass","book","coffee cup","smartphone","rose","candle"] },
-      { id:"12-02", label:"环境", phrases:["cherry blossoms","rain drops","city lights","starry sky","snow","autumn leaves"] },
-    ]},
-  { id:"13", label:"LoRA 权重", sub:"13", icon:"⚙️",
-    categories:[
-      { id:"13-01", label:"风格LoRA",  phrases:["<lora:add_detail:0.8>","<lora:more_details:0.5>","<lora:face_yiyi:0.7>"] },
-      { id:"13-02", label:"权重控制", phrases:["(phrase:1.2)","(phrase:1.5)","(phrase:0.8)","(phrase:0.5)","[[phrase]]","((phrase))"] },
-    ]},
-  { id:"14", label:"人格卡片", sub:"14", icon:"🪪",
-    categories:[
-      { id:"14-01", label:"基础人设", phrases:["1girl","solo","asian","japanese","chinese","korean"] },
-      { id:"14-02", label:"职业人设", phrases:["student","office lady","idol","model","nurse","teacher","stewardess"] },
-      { id:"14-03", label:"年龄标签", phrases:["young adult","adult","mature female","20s"] },
-    ]},
-];
+  <script type="text/babel">
+    /* ─── DATA ─────────────────────────────────────────────────────────────── */
+    const DEFAULT_DATA = [
+      { id:"00", label:"00-范例", icon:"✦",
+        categories:[
+          { id:"00-01", label:"基础示例", phrases:["masterpiece","best quality","ultra-detailed","8k uhd","photorealistic"] },
+          { id:"00-02", label:"质量标签", phrases:["highres","absurdres","extremely detailed","intricate details","sharp focus"] },
+        ]},
+      { id:"01", label:"01-场景主题", icon:"🏠",
+        categories:[
+          { id:"01-01", label:"室内场景", phrases:["bedroom","hotel room","bathroom","living room","studio apartment","luxury suite"] },
+          { id:"01-02", label:"室外场景", phrases:["rooftop","garden","balcony","beach","forest clearing","alley"] },
+          { id:"01-03", label:"特殊场景", phrases:["onsen","love hotel","changing room","school corridor","office after hours"] },
+        ]},
+      { id:"02", label:"02-景别构图", icon:"🎞",
+        categories:[
+          { id:"02-01", label:"景别", phrases:["close-up","medium shot","full body","cowboy shot","bust shot","extreme close-up"] },
+          { id:"02-02", label:"构图", phrases:["rule of thirds","centered composition","dutch angle","overhead view","from below","from behind"] },
+          { id:"02-03", label:"视角", phrases:["pov","first person view","bird's eye view","worm's eye view","side view"] },
+        ]},
+      { id:"03", label:"03-光线打光", icon:"☀️",
+        categories:[
+          { id:"03-01", label:"自然光", phrases:["sunlight","golden hour","moonlight","overcast light","dappled light","window light"] },
+          { id:"03-02", label:"人工光", phrases:["studio lighting","rim lighting","backlit","neon lights","candlelight","soft box lighting"] },
+          { id:"03-03", label:"光效",   phrases:["lens flare","volumetric lighting","god rays","bokeh","light particles","glowing"] },
+        ]},
+      { id:"04", label:"04-画风渲染", icon:"🎨",
+        categories:[
+          { id:"04-01", label:"写实风格", phrases:["photorealistic","hyperrealistic","cinematic","film grain","RAW photo","DSLR"] },
+          { id:"04-02", label:"插画风格", phrases:["anime style","manga style","cel shading","flat design","illustration","line art"] },
+          { id:"04-03", label:"渲染引擎", phrases:["unreal engine 5","octane render","cinema 4d","blender render","ray tracing"] },
+        ]},
+      { id:"05", label:"05-人物外貌", icon:"👤",
+        categories:[
+          { id:"05-01", label:"发型发色", phrases:["long black hair","short bob","twin tails","ponytail","bangs","wavy hair","brown hair"] },
+          { id:"05-02", label:"眼睛",   phrases:["large eyes","almond eyes","double eyelids","brown eyes","doe eyes"] },
+          { id:"05-03", label:"体型",   phrases:["slim","petite","athletic build","tall","hourglass figure"] },
+        ]},
+      { id:"06", label:"06-服装配饰", icon:"👗",
+        categories:[
+          { id:"06-01", label:"日常服装", phrases:["school uniform","office wear","casual wear","sundress","jeans and t-shirt"] },
+          { id:"06-02", label:"特殊服装", phrases:["qipao","kimono","yukata","maid outfit","nurse uniform","bunny suit"] },
+          { id:"06-03", label:"配饰",   phrases:["choker","earrings","hair ribbon","glasses","anklet","bracelet"] },
+        ]},
+      { id:"07", label:"07-表情神态", icon:"😊",
+        categories:[
+          { id:"07-01", label:"基础表情", phrases:["smile","shy expression","surprised","blushing","pouting","serious"] },
+          { id:"07-02", label:"情绪状态", phrases:["confident","embarrassed","playful","dreamy","seductive look","innocent"] },
+        ]},
+      { id:"08", label:"08-姿势动作", icon:"🧍",
+        categories:[
+          { id:"08-01", label:"站姿", phrases:["standing","leaning against wall","hands on hips","arms crossed","one hand raised"] },
+          { id:"08-02", label:"坐姿", phrases:["sitting","kneeling","cross-legged","sitting on bed","perched on edge"] },
+          { id:"08-03", label:"躺姿", phrases:["lying down","lying on back","curled up","sprawled","side-lying"] },
+        ]},
+      { id:"09", label:"09-色调滤镜", icon:"🎭",
+        categories:[
+          { id:"09-01", label:"冷暖色调", phrases:["warm tones","cool tones","golden tones","blue hour","rose tint"] },
+          { id:"09-02", label:"特效滤镜", phrases:["vignette","chromatic aberration","film grain","bloom effect","desaturated"] },
+          { id:"09-03", label:"整体基调", phrases:["dreamy atmosphere","moody","vibrant","soft pastel","high contrast","cinematic grade"] },
+        ]},
+      { id:"10", label:"10-镜头参数", icon:"📷",
+        categories:[
+          { id:"10-01", label:"焦距",     phrases:["35mm lens","50mm lens","85mm lens","135mm portrait lens","wide angle 24mm"] },
+          { id:"10-02", label:"光圈景深", phrases:["f/1.4 bokeh","f/1.8 depth of field","shallow depth of field","deep focus","tilt-shift"] },
+          { id:"10-03", label:"快门效果", phrases:["motion blur","frozen motion","long exposure","crisp detail"] },
+        ]},
+      { id:"11", label:"11-负面提示", icon:"🚫",
+        categories:[
+          { id:"11-01", label:"质量负面", phrases:["(worst quality:2)","(low quality:2)","blurry","jpeg artifacts","watermark","text"] },
+          { id:"11-02", label:"解剖负面", phrases:["bad anatomy","extra limbs","missing fingers","distorted face","deformed hands"] },
+          { id:"11-03", label:"其他负面", phrases:["ugly","duplicate","error","out of frame","cropped","username"] },
+        ]},
+      { id:"12", label:"12-氛围道具", icon:"🌸",
+        categories:[
+          { id:"12-01", label:"道具物品", phrases:["wine glass","book","coffee cup","smartphone","rose","candle"] },
+          { id:"12-02", label:"环境元素", phrases:["cherry blossoms","rain drops","city lights","starry sky","snow","autumn leaves"] },
+        ]},
+      { id:"13", label:"13-LoRA权重", icon:"⚙️",
+        categories:[
+          { id:"13-01", label:"风格LoRA",  phrases:["<lora:add_detail:0.8>","<lora:more_details:0.5>","<lora:face_yiyi:0.7>"] },
+          { id:"13-02", label:"权重控制", phrases:["(phrase:1.2)","(phrase:1.5)","(phrase:0.8)","(phrase:0.5)","[[phrase]]","((phrase))"] },
+        ]},
+      { id:"14", label:"14-人格卡片", icon:"🪪",
+        categories:[
+          { id:"14-01", label:"基础人设", phrases:["1girl","solo","asian","japanese","chinese","korean"] },
+          { id:"14-02", label:"职业人设", phrases:["student","office lady","idol","model","nurse","teacher","stewardess"] },
+          { id:"14-03", label:"年龄标签", phrases:["young adult","adult","mature female","20s"] },
+        ]},
+    ];
 
-const KEY = "pb_iphone_v1";
-const load    = () => { try { const r=localStorage.getItem(KEY); return r?JSON.parse(r):DEFAULT_DATA; }catch{return DEFAULT_DATA;} };
-const persist = d  => { try { localStorage.setItem(KEY,JSON.stringify(d)); }catch{} };
+    const KEY = "pb_v3";
+    const load = () => { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : DEFAULT_DATA; } catch { return DEFAULT_DATA; } };
+    const persist = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} };
 
-/* ══════════════════════════════════════════════════════════
-   DESIGN TOKENS
-══════════════════════════════════════════════════════════ */
-const C = {
-  bg:     "#0b0009",
-  card:   "#150011",
-  pink:   "#db2777",
-  pinkD:  "#9d174d",
-  pinkBg: "rgba(219,39,119,.12)",
-  pinkBd: "rgba(219,39,119,.22)",
-  text:   "#fce7f3",
-  muted:  "rgba(240,214,232,.45)",
-  border: "rgba(219,39,119,.18)",
-};
-const MONO = "'DM Mono','Fira Code',monospace";
+    /* ─── SVG ICONS ─────────────────────────────────────────────────────────── */
+    const Back   = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>;
+    const Copy   = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+    const Trash  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>;
+    const Edit2  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+    const Plus   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+    const X      = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+    const Check  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>;
+    const ChevR  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>;
+    const Search = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+    const Reset  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.49"/></svg>;
+    const Bubble = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
 
-/* ══════════════════════════════════════════════════════════
-   ICONS
-══════════════════════════════════════════════════════════ */
-const Ico = ({ d, size=20, stroke=2.2 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
-    <path d={d}/>
-  </svg>
-);
-const IBack  = () => <Ico d="M15 18l-6-6 6-6" size={22} stroke={2.5}/>;
-const ICopy  = () => (
-  <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-  </svg>
-);
-const ITrash = () => (
-  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/>
-  </svg>
-);
-const IEdit  = () => (
-  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>
-);
-const IPlus  = () => <Ico d="M12 5v14M5 12h14" size={18} stroke={2.5}/>;
-const IX     = () => <Ico d="M18 6L6 18M6 6l12 12" size={18} stroke={2.5}/>;
-const ICheck = () => <Ico d="M20 6L9 17l-5-5" size={17} stroke={2.5}/>;
-const ISearch= () => (
-  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </svg>
-);
-const IBubble= () => (
-  <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-);
-const IReset = () => (
-  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.49"/>
-  </svg>
-);
-
-/* ══════════════════════════════════════════════════════════
-   PRIMITIVES
-══════════════════════════════════════════════════════════ */
-function TapBtn({ onClick, style, children, disabled }) {
-  return (
-    <button
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-      style={{
-        WebkitTapHighlightColor: "transparent",
-        touchAction: "manipulation",
-        cursor: disabled ? "not-allowed" : "pointer",
-        border: "none",
-        background: "none",
-        padding: 0,
-        ...style,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Toast({ msg, visible }) {
-  return (
-    <div style={{
-      position:"fixed", bottom:"calc(env(safe-area-inset-bottom,16px) + 88px)",
-      left:"50%", transform:`translateX(-50%) translateY(${visible?0:8}px)`,
-      opacity: visible?1:0, transition:"all .22s ease",
-      background:"rgba(219,39,119,.95)", color:"#fff",
-      padding:"10px 22px", borderRadius:30, fontSize:14, fontWeight:700,
-      zIndex:9000, pointerEvents:"none", whiteSpace:"nowrap",
-      boxShadow:"0 6px 24px rgba(219,39,119,.45)",
-    }}>
-      {msg}
-    </div>
-  );
-}
-
-/* ── Bottom Sheet ── */
-function Sheet({ onDismiss, children, title, maxH="88vh" }) {
-  return (
-    <div
-      onClick={e => e.target===e.currentTarget && onDismiss()}
-      style={{ position:"fixed",inset:0,zIndex:3000,background:"rgba(6,0,5,.78)",backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",display:"flex",alignItems:"flex-end" }}
-    >
-      <div style={{ width:"100%",background:C.card,borderRadius:"22px 22px 0 0",border:`1px solid ${C.pinkBd}`,borderBottom:"none",maxHeight:maxH,display:"flex",flexDirection:"column",boxShadow:"0 -20px 60px rgba(219,39,119,.22)",paddingBottom:"env(safe-area-inset-bottom,16px)" }}>
-        {/* drag handle */}
-        <div style={{ display:"flex",justifyContent:"center",padding:"10px 0 0",flexShrink:0 }}>
-          <div style={{ width:42,height:4,borderRadius:4,background:"rgba(219,39,119,.3)" }}/>
-        </div>
-        {title && (
-          <div style={{ padding:"10px 20px 12px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
-            <div style={{ fontSize:18,fontWeight:700,color:C.text }}>{title}</div>
+    /* ─── BOTTOM SHEET WRAPPER ──────────────────────────────────────────────── */
+    function Sheet({ onDismiss, children, maxH = "80vh" }) {
+      return (
+        <div
+          style={{ position:"fixed", inset:0, zIndex:2000, background:"rgba(6,0,5,.72)", backdropFilter:"blur(8px)", WebkitBackdropFilter:"blur(8px)", display:"flex", alignItems:"flex-end" }}
+          onClick={e => e.target === e.currentTarget && onDismiss()}
+        >
+          <div style={{ width:"100%", background:"#150010", borderRadius:"24px 24px 0 0", border:"1px solid rgba(219,39,119,.28)", borderBottom:"none", maxHeight:maxH, display:"flex", flexDirection:"column", boxShadow:"0 -20px 60px rgba(219,39,119,.2)", paddingBottom:"env(safe-area-inset-bottom)" }}>
+            <div style={{ display:"flex", justifyContent:"center", padding:"12px 0 4px", flexShrink:0 }}>
+              <div style={{ width:44, height:4, borderRadius:4, background:"rgba(219,39,119,.3)" }}/>
+            </div>
+            {children}
           </div>
-        )}
-        {children}
-      </div>
-    </div>
-  );
-}
+        </div>
+      );
+    }
 
-/* ── Edit Sheet ── */
-function EditSheet({ target, onSave, onDelete, onClose }) {
-  const [v, setV] = useState(target.phrase);
-  const ref = useRef();
-  useEffect(() => { setTimeout(()=>ref.current?.focus(),180); }, []);
-  return (
-    <Sheet onDismiss={onClose} maxH="70vh">
-      <div style={{ padding:"14px 20px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
-        <div style={{ fontSize:11,color:"rgba(219,39,119,.5)",fontFamily:MONO,marginBottom:3,letterSpacing:".04em" }}>{target.moduleName} › {target.catName}</div>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text }}>编辑短语</div>
-      </div>
-      <div style={{ padding:"16px 20px 12px",flexShrink:0 }}>
-        <textarea ref={ref} value={v} onChange={e=>setV(e.target.value)} rows={3}
-          style={{ width:"100%",boxSizing:"border-box",background:"rgba(219,39,119,.07)",border:`1.5px solid ${C.pinkBd}`,borderRadius:14,color:C.text,fontSize:16,lineHeight:1.65,padding:"13px 15px",resize:"none",outline:"none",fontFamily:MONO,WebkitAppearance:"none" }}
-          onFocus={e=>{e.target.style.borderColor="rgba(219,39,119,.7)";}}
-          onBlur={e=>{e.target.style.borderColor=C.pinkBd;}}
-        />
-      </div>
-      <div style={{ padding:"0 20px 4px",display:"flex",gap:10,flexShrink:0 }}>
-        <TapBtn onClick={onDelete} style={{ flex:1,height:54,borderRadius:14,border:"1.5px solid rgba(239,68,68,.3)",background:"rgba(239,68,68,.08)",color:"#fca5a5",fontSize:15,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><ITrash/> 删除</TapBtn>
-        <TapBtn onClick={onClose}  style={{ flex:1,height:54,borderRadius:14,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,.04)",color:C.muted,fontSize:15 }}>取消</TapBtn>
-        <TapBtn onClick={()=>v.trim()&&onSave(v.trim())} style={{ flex:2,height:54,borderRadius:14,border:"none",background:v.trim()?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.15)",color:v.trim()?"#fff":"rgba(255,255,255,.3)",fontSize:15,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:v.trim()?"0 4px 18px rgba(219,39,119,.35)":"none" }}><ICheck/> 保存</TapBtn>
-      </div>
-    </Sheet>
-  );
-}
+    /* ─── EDIT MODAL ─────────────────────────────────────────────────────────── */
+    function EditModal({ target, onSave, onDelete, onClose }) {
+      const [v, setV] = React.useState(target.phrase);
+      const ref = React.useRef();
+      React.useEffect(() => { setTimeout(() => ref.current?.focus(), 100); }, []);
 
-/* ── Add Sheet ── */
-function AddSheet({ moduleName, catName, onAdd, onClose }) {
-  const [v, setV] = useState("");
-  const ref = useRef();
-  useEffect(() => { setTimeout(()=>ref.current?.focus(),180); }, []);
-  return (
-    <Sheet onDismiss={onClose} maxH="55vh">
-      <div style={{ padding:"14px 20px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
-        <div style={{ fontSize:11,color:"rgba(219,39,119,.5)",fontFamily:MONO,marginBottom:3 }}>{moduleName} › {catName}</div>
-        <div style={{ fontSize:20,fontWeight:700,color:C.text }}>添加新短语</div>
-      </div>
-      <div style={{ padding:"16px 20px 12px",flexShrink:0 }}>
-        <textarea ref={ref} value={v} onChange={e=>setV(e.target.value)} rows={3} placeholder="输入新的提示词短语…"
-          style={{ width:"100%",boxSizing:"border-box",background:"rgba(219,39,119,.07)",border:`1.5px solid ${C.pinkBd}`,borderRadius:14,color:C.text,fontSize:16,lineHeight:1.65,padding:"13px 15px",resize:"none",outline:"none",fontFamily:MONO,WebkitAppearance:"none" }}
-          onFocus={e=>{e.target.style.borderColor="rgba(219,39,119,.7)";}}
-          onBlur={e=>{e.target.style.borderColor=C.pinkBd;}}
-        />
-      </div>
-      <div style={{ padding:"0 20px 4px",display:"flex",gap:10,flexShrink:0 }}>
-        <TapBtn onClick={onClose} style={{ flex:1,height:54,borderRadius:14,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,.04)",color:C.muted,fontSize:15 }}>取消</TapBtn>
-        <TapBtn onClick={()=>v.trim()&&onAdd(v.trim())} style={{ flex:2,height:54,borderRadius:14,border:"none",background:v.trim()?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.15)",color:v.trim()?"#fff":"rgba(255,255,255,.3)",fontSize:15,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:v.trim()?"0 4px 18px rgba(219,39,119,.35)":"none" }}><IPlus/> 添加</TapBtn>
-      </div>
-    </Sheet>
-  );
-}
+      return (
+        <Sheet onDismiss={onClose}>
+          <div style={{ padding:"4px 20px 12px", borderBottom:"1px solid rgba(219,39,119,.12)", flexShrink:0 }}>
+            <div style={{ fontSize:11, color:"rgba(219,39,119,.5)", fontFamily:"monospace", marginBottom:3 }}>{target.moduleName} › {target.catName}</div>
+            <div style={{ fontSize:19, fontWeight:700, color:"#f9d2e6" }}>编辑短语</div>
+          </div>
+          <div style={{ padding:"16px 20px", flexShrink:0 }}>
+            <textarea ref={ref} value={v} onChange={e=>setV(e.target.value)} rows={3}
+              style={{ width:"100%", boxSizing:"border-box", background:"rgba(219,39,119,.07)", border:"1.5px solid rgba(219,39,119,.25)", borderRadius:14, color:"#fce7f3", fontSize:16, lineHeight:1.6, padding:"13px 16px", resize:"none", outline:"none", fontFamily:"'DM Mono',monospace", WebkitAppearance:"none" }}
+              onFocus={e=>{ e.target.style.borderColor="rgba(219,39,119,.7)"; }}
+              onBlur={e=>{ e.target.style.borderColor="rgba(219,39,119,.25)"; }}
+            />
+          </div>
+          <div style={{ padding:"0 20px 16px", display:"flex", gap:10, flexShrink:0 }}>
+            <button onClick={onDelete} style={{ flex:1, height:52, borderRadius:14, border:"1.5px solid rgba(239,68,68,.3)", background:"rgba(239,68,68,.08)", color:"#fca5a5", fontSize:15, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}><Trash/> 删除</button>
+            <button onClick={onClose}  style={{ flex:1, height:52, borderRadius:14, border:"1.5px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.04)", color:"rgba(255,255,255,.4)", fontSize:15, cursor:"pointer" }}>取消</button>
+            <button onClick={() => v.trim() && onSave(v.trim())} style={{ flex:2, height:52, borderRadius:14, border:"none", background:v.trim()?"linear-gradient(135deg,#db2777,#9d174d)":"rgba(219,39,119,.2)", color:v.trim()?"#fff":"rgba(255,255,255,.3)", fontSize:15, fontWeight:700, cursor:v.trim()?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:v.trim()?"0 4px 18px rgba(219,39,119,.35)":"none" }}><Check/> 保存</button>
+          </div>
+        </Sheet>
+      );
+    }
 
-/* ── Prompt Sheet ── */
-function PromptSheet({ assembled, onRemove, onCopy, onClear, onClose, copied }) {
-  const prompt = assembled.join(", ");
-  return (
-    <Sheet onDismiss={onClose} title={`已组装 Prompt · ${assembled.length} 条`} maxH="88vh">
-      {/* chips */}
-      <div style={{ padding:"12px 16px 10px",borderBottom:`1px solid ${C.border}`,display:"flex",flexWrap:"wrap",gap:7,maxHeight:180,overflowY:"auto",WebkitOverflowScrolling:"touch",flexShrink:0 }}>
-        {assembled.length===0 ? (
-          <span style={{ color:C.muted,fontSize:14,fontStyle:"italic" }}>还没有选择任何短语</span>
-        ) : assembled.map((p,i)=>(
-          <TapBtn key={i} onClick={()=>onRemove(p)}
-            style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:10,border:`1.5px solid rgba(219,39,119,.35)`,background:"rgba(219,39,119,.13)",color:C.text,fontSize:13,fontFamily:MONO }}>
-            {p} <span style={{ opacity:.45,fontSize:11 }}>×</span>
-          </TapBtn>
-        ))}
-      </div>
-      {/* full text */}
-      <textarea readOnly value={prompt} placeholder="prompt 将在这里显示…"
-        style={{ flex:1,background:"transparent",border:"none",color:"rgba(252,231,243,.75)",fontSize:14,lineHeight:1.75,padding:"14px 18px",resize:"none",outline:"none",fontFamily:MONO,WebkitOverflowScrolling:"touch" }}
-      />
-      {/* actions */}
-      <div style={{ padding:"10px 16px 4px",display:"flex",gap:10,flexShrink:0 }}>
-        <TapBtn onClick={onClear} disabled={!assembled.length}
-          style={{ width:54,height:54,borderRadius:14,border:`1.5px solid ${C.border}`,background:"rgba(219,39,119,.06)",color:C.muted,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-          <ITrash/>
-        </TapBtn>
-        <TapBtn onClick={onCopy} disabled={!assembled.length}
-          style={{ flex:1,height:54,borderRadius:14,border:"none",background:assembled.length?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.15)",color:assembled.length?"#fff":"rgba(255,255,255,.3)",fontSize:16,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:assembled.length?"0 4px 20px rgba(219,39,119,.38)":"none" }}>
-          {copied ? <><ICheck/> 已复制</> : <><ICopy/> 复制 Prompt</>}
-        </TapBtn>
-      </div>
-    </Sheet>
-  );
-}
+    /* ─── ADD MODAL ─────────────────────────────────────────────────────────── */
+    function AddModal({ moduleName, catName, onAdd, onClose }) {
+      const [v, setV] = React.useState("");
+      const ref = React.useRef();
+      React.useEffect(() => { setTimeout(() => ref.current?.focus(), 100); }, []);
+      return (
+        <Sheet onDismiss={onClose}>
+          <div style={{ padding:"4px 20px 12px", borderBottom:"1px solid rgba(219,39,119,.12)", flexShrink:0 }}>
+            <div style={{ fontSize:11, color:"rgba(219,39,119,.5)", fontFamily:"monospace", marginBottom:3 }}>{moduleName} › {catName}</div>
+            <div style={{ fontSize:19, fontWeight:700, color:"#f9d2e6" }}>添加新短语</div>
+          </div>
+          <div style={{ padding:"16px 20px", flexShrink:0 }}>
+            <textarea ref={ref} value={v} onChange={e=>setV(e.target.value)} rows={3} placeholder="输入新的提示词短语…"
+              style={{ width:"100%", boxSizing:"border-box", background:"rgba(219,39,119,.07)", border:"1.5px solid rgba(219,39,119,.25)", borderRadius:14, color:"#fce7f3", fontSize:16, lineHeight:1.6, padding:"13px 16px", resize:"none", outline:"none", fontFamily:"'DM Mono',monospace", WebkitAppearance:"none" }}
+              onFocus={e=>{ e.target.style.borderColor="rgba(219,39,119,.7)"; }}
+              onBlur={e=>{ e.target.style.borderColor="rgba(219,39,119,.25)"; }}
+            />
+          </div>
+          <div style={{ padding:"0 20px 16px", display:"flex", gap:10, flexShrink:0 }}>
+            <button onClick={onClose} style={{ flex:1, height:52, borderRadius:14, border:"1.5px solid rgba(255,255,255,.1)", background:"rgba(255,255,255,.04)", color:"rgba(255,255,255,.4)", fontSize:15, cursor:"pointer" }}>取消</button>
+            <button onClick={() => v.trim() && onAdd(v.trim())} style={{ flex:2, height:52, borderRadius:14, border:"none", background:v.trim()?"linear-gradient(135deg,#db2777,#9d174d)":"rgba(219,39,119,.2)", color:v.trim()?"#fff":"rgba(255,255,255,.3)", fontSize:15, fontWeight:700, cursor:v.trim()?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:v.trim()?"0 4px 18px rgba(219,39,119,.35)":"none" }}><Plus/> 添加</button>
+          </div>
+        </Sheet>
+      );
+    }
 
-/* ══════════════════════════════════════════════════════════
-   MAIN APP
-══════════════════════════════════════════════════════════ */
-export default function App() {
-  const [data, setData]           = useState(load);
-  const [selMod, setSelMod]       = useState(null);   // module id
-  const [selCat, setSelCat]       = useState(null);   // category id
-  const [assembled, setAssembled] = useState([]);
-  const [editMode, setEditMode]   = useState(false);
-  const [search, setSearch]       = useState("");
-  const [showPrompt, setShowPrompt]= useState(false);
-  const [editTarget, setEditTarget]= useState(null);
-  const [addTarget, setAddTarget]  = useState(null);
-  const [toast, setToast]          = useState({ msg:"", v:false });
-  const [copied, setCopied]        = useState(false);
-  const catScrollRef               = useRef();
-  const timerRef                   = useRef();
-
-  useEffect(() => { persist(data); }, [data]);
-
-  /* toast */
-  const flash = msg => {
-    clearTimeout(timerRef.current);
-    setToast({ msg, v:true });
-    timerRef.current = setTimeout(()=>setToast(t=>({...t,v:false})),1800);
-  };
-
-  /* copy */
-  const handleCopy = async () => {
-    if (!assembled.length) return;
-    try {
-      await navigator.clipboard.writeText(assembled.join(", "));
-      setCopied(true); flash("已复制 ✓");
-      setTimeout(()=>setCopied(false),2200);
-    } catch { flash("复制失败"); }
-  };
-
-  /* assembled ops */
-  const addPhrase    = p => { if(!assembled.includes(p)){ setAssembled(a=>[...a,p]); flash("已添加"); } };
-  const removePhrase = p => setAssembled(a=>a.filter(x=>x!==p));
-
-  /* nav */
-  const goBack = () => {
-    if (selCat) { setSelCat(null); setSearch(""); }
-    else        { setSelMod(null); setSelCat(null); setSearch(""); }
-  };
-  const pickMod = mod => { setSelMod(mod.id); setSelCat(mod.categories[0]?.id || null); };
-
-  /* edit ops */
-  const saveEdit = newP => {
-    setData(d=>d.map(m=>m.id!==editTarget.moduleId?m:{ ...m, categories:m.categories.map(c=>c.id!==editTarget.catId?c:{ ...c, phrases:c.phrases.map((p,i)=>i===editTarget.idx?newP:p) }) }));
-    setAssembled(a=>a.map(p=>p===editTarget.phrase?newP:p));
-    setEditTarget(null); flash("修改已保存");
-  };
-  const delEdit = () => {
-    setData(d=>d.map(m=>m.id!==editTarget.moduleId?m:{ ...m, categories:m.categories.map(c=>c.id!==editTarget.catId?c:{ ...c, phrases:c.phrases.filter((_,i)=>i!==editTarget.idx) }) }));
-    setAssembled(a=>a.filter(p=>p!==editTarget.phrase));
-    setEditTarget(null); flash("已删除");
-  };
-  const addNew = p => {
-    setData(d=>d.map(m=>m.id!==addTarget.moduleId?m:{ ...m, categories:m.categories.map(c=>c.id!==addTarget.catId?c:{ ...c, phrases:[...c.phrases,p] }) }));
-    setAddTarget(null); flash("已添加短语");
-  };
-  const resetAll = () => {
-    if(!window.confirm("重置所有数据？")) return;
-    setData(DEFAULT_DATA); setAssembled([]); flash("已重置");
-  };
-
-  /* derived */
-  const curMod  = data.find(m=>m.id===selMod);
-  const curCat  = curMod?.categories.find(c=>c.id===selCat);
-  const sl      = search.toLowerCase();
-  const filtered= curCat ? (search ? curCat.phrases.filter(p=>p.toLowerCase().includes(sl)) : curCat.phrases) : [];
-
-  /* screen: home / module+cat */
-  const onHome = !selMod;
-
-  /* ── STATUS BAR PLACEHOLDER HEIGHT (Dynamic Island) ── */
-  const statusH = "env(safe-area-inset-top, 50px)";
-  const bottomH = "env(safe-area-inset-bottom, 16px)";
-
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
-        html, body, #root { height: 100%; background: ${C.bg}; overscroll-behavior: none; }
-        body { -webkit-text-size-adjust: 100%; }
-        ::-webkit-scrollbar { display: none; }
-        input, textarea, button { font-family: inherit; -webkit-appearance: none; }
-        /* prevent double-tap zoom on all buttons */
-        button { touch-action: manipulation; }
-      `}</style>
-
-      <div style={{
-        position:"fixed", inset:0,
-        background: C.bg,
-        color: C.text,
-        fontFamily:"'Outfit','Noto Sans SC',sans-serif",
-        display:"flex", flexDirection:"column",
-        /* respect Dynamic Island / home indicator */
-        paddingTop: statusH,
-        paddingBottom: 0,
-      }}>
-
-        {/* ══ HEADER ══════════════════════════════════════════ */}
-        <div style={{
-          display:"flex", alignItems:"center",
-          padding:"0 16px",
-          height:56, flexShrink:0,
-          borderBottom:`1px solid ${C.border}`,
-          background:"rgba(11,0,9,.9)",
-          backdropFilter:"blur(20px)",
-          WebkitBackdropFilter:"blur(20px)",
-          gap:10,
-        }}>
-          {/* Back / Logo */}
-          {!onHome ? (
-            <TapBtn onClick={goBack} style={{ display:"flex",alignItems:"center",justifyContent:"center",width:40,height:40,borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(219,39,119,.07)",color:C.text,flexShrink:0 }}>
-              <IBack/>
-            </TapBtn>
-          ) : (
-            <span style={{ fontSize:22,fontWeight:900,background:"linear-gradient(135deg,#f9a8d4,#db2777)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.03em",flexShrink:0 }}>
-              ✦ PB
-            </span>
+    /* ─── PROMPT SHEET ──────────────────────────────────────────────────────── */
+    function PromptSheet({ assembled, onRemove, onCopy, onClear, onClose, copied }) {
+      return (
+        <Sheet onDismiss={onClose} maxH="82vh">
+          <div style={{ padding:"4px 20px 14px", borderBottom:"1px solid rgba(219,39,119,.12)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+            <div>
+              <div style={{ fontSize:19, fontWeight:800, color:"#f9d2e6" }}>已组装 Prompt</div>
+              <div style={{ fontSize:12, color:"rgba(219,39,119,.5)", marginTop:2 }}>{assembled.length} 条短语</div>
+            </div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,.07)", border:"none", borderRadius:10, padding:9, cursor:"pointer", color:"rgba(240,214,232,.5)", display:"flex" }}><X/></button>
+          </div>
+          {assembled.length > 0 && (
+            <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(219,39,119,.08)", display:"flex", flexWrap:"wrap", gap:8, overflowY:"auto", maxHeight:150, flexShrink:0 }}>
+              {assembled.map((p,i) => (
+                <span key={i} onClick={() => onRemove(p)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:8, background:"rgba(219,39,119,.15)", border:"1px solid rgba(219,39,119,.3)", color:"#fce7f3", fontSize:13, cursor:"pointer", fontFamily:"'DM Mono',monospace" }}>
+                  {p} <span style={{ opacity:.4, fontSize:11 }}>×</span>
+                </span>
+              ))}
+            </div>
           )}
+          <textarea readOnly value={assembled.join(", ")} placeholder="点击短语加入 Prompt…"
+            style={{ flex:1, background:"transparent", border:"none", color:"rgba(252,231,243,.8)", fontSize:13.5, lineHeight:1.85, padding:"14px 18px", resize:"none", outline:"none", fontFamily:"'DM Mono',monospace", WebkitAppearance:"none", minHeight:100 }}
+          />
+          <div style={{ padding:"12px 16px", display:"flex", gap:10, flexShrink:0 }}>
+            <button onClick={onCopy} disabled={!assembled.length} style={{ flex:1, height:54, borderRadius:14, border:"none", background:assembled.length?"linear-gradient(135deg,#db2777,#9d174d)":"rgba(219,39,119,.15)", color:assembled.length?"#fff":"rgba(255,255,255,.3)", fontSize:15, fontWeight:700, cursor:assembled.length?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", gap:9, boxShadow:assembled.length?"0 4px 18px rgba(219,39,119,.35)":"none" }}>
+              <Copy/> {copied ? "已复制 ✓" : "复制全部"}
+            </button>
+            <button onClick={onClear} disabled={!assembled.length} style={{ width:54, height:54, borderRadius:14, border:"1.5px solid rgba(219,39,119,.2)", background:"rgba(219,39,119,.05)", color:assembled.length?"rgba(240,214,232,.6)":"rgba(255,255,255,.15)", cursor:assembled.length?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <Trash/>
+            </button>
+          </div>
+        </Sheet>
+      );
+    }
 
-          {/* Title */}
-          <div style={{ flex:1,minWidth:0,overflow:"hidden" }}>
-            {onHome ? (
-              <div style={{ fontSize:15,fontWeight:700,color:C.text }}>Prompt Builder</div>
-            ) : (
-              <div>
-                <div style={{ fontSize:16,fontWeight:700,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>
-                  {curMod?.label}
+    /* ─── TOAST ─────────────────────────────────────────────────────────────── */
+    function Toast({ msg, visible }) {
+      return (
+        <div style={{ position:"fixed", bottom:"calc(88px + env(safe-area-inset-bottom))", left:"50%", transform:`translateX(-50%) translateY(${visible?0:"8px"})`, opacity:visible?1:0, transition:"all .2s ease", background:"rgba(219,39,119,.95)", color:"#fff", padding:"10px 22px", borderRadius:30, fontSize:14, fontWeight:700, zIndex:4000, boxShadow:"0 6px 20px rgba(219,39,119,.4)", pointerEvents:"none", whiteSpace:"nowrap" }}>
+          {msg}
+        </div>
+      );
+    }
+
+    /* ─── MAIN APP ──────────────────────────────────────────────────────────── */
+    function App() {
+      const [data,       setData]       = React.useState(() => load());
+      const [view,       setView]       = React.useState("modules");
+      const [selMod,     setSelMod]     = React.useState(null);
+      const [selCat,     setSelCat]     = React.useState(null);
+      const [assembled,  setAssembled]  = React.useState([]);
+      const [editMode,   setEditMode]   = React.useState(false);
+      const [editTarget, setEditTarget] = React.useState(null);
+      const [addTarget,  setAddTarget]  = React.useState(null);
+      const [showPrompt, setShowPrompt] = React.useState(false);
+      const [search,     setSearch]     = React.useState("");
+      const [toast,      setToast]      = React.useState({ msg:"", v:false });
+      const [copied,     setCopied]     = React.useState(false);
+      const catRef  = React.useRef();
+      const tRef    = React.useRef();
+
+      React.useEffect(() => { persist(data); }, [data]);
+
+      const flash = (msg) => {
+        clearTimeout(tRef.current);
+        setToast({ msg, v:true });
+        tRef.current = setTimeout(() => setToast(t=>({...t,v:false})), 1700);
+      };
+
+      const openMod = (mod) => {
+        setSelMod(mod.id);
+        setSelCat(mod.categories[0]?.id ?? null);
+        setSearch("");
+        setView("phrases");
+      };
+      const goBack = () => { setView("modules"); setSelMod(null); setSelCat(null); setSearch(""); };
+
+      const addPhrase = (p) => { setAssembled(prev => prev.includes(p) ? prev : [...prev, p]); flash("已添加 ✓"); };
+      const removePhrase = (p) => setAssembled(prev => prev.filter(x=>x!==p));
+
+      const handleCopy = async () => {
+        if (!assembled.length) return;
+        try {
+          await navigator.clipboard.writeText(assembled.join(", "));
+          setCopied(true); flash("已复制到剪贴板 ✓");
+          setTimeout(() => setCopied(false), 2000);
+        } catch { flash("复制失败，请手动选取"); }
+      };
+
+      const saveEdit = (newP) => {
+        setData(prev => prev.map(m => m.id!==editTarget.moduleId ? m : { ...m, categories: m.categories.map(c => c.id!==editTarget.catId ? c : { ...c, phrases: c.phrases.map((p,i) => i===editTarget.idx ? newP : p) }) }));
+        setAssembled(prev => prev.map(p => p===editTarget.phrase ? newP : p));
+        setEditTarget(null); flash("修改已保存");
+      };
+      const deleteEdit = () => {
+        setData(prev => prev.map(m => m.id!==editTarget.moduleId ? m : { ...m, categories: m.categories.map(c => c.id!==editTarget.catId ? c : { ...c, phrases: c.phrases.filter((_,i)=>i!==editTarget.idx) }) }));
+        setAssembled(prev => prev.filter(p => p!==editTarget.phrase));
+        setEditTarget(null); flash("已删除");
+      };
+      const addNew = (p) => {
+        setData(prev => prev.map(m => m.id!==addTarget.moduleId ? m : { ...m, categories: m.categories.map(c => c.id!==addTarget.catId ? c : { ...c, phrases:[...c.phrases, p] }) }));
+        setAddTarget(null); flash("已添加新短语");
+      };
+      const handleReset = () => { if (confirm("重置所有数据到默认？")) { setData(DEFAULT_DATA); setAssembled([]); flash("已重置"); } };
+
+      const curMod = data.find(m => m.id===selMod);
+      const curCat = curMod?.categories.find(c => c.id===selCat);
+      const filtered = curCat ? (search ? curCat.phrases.filter(p=>p.toLowerCase().includes(search.toLowerCase())) : curCat.phrases) : [];
+
+      const P = "#db2777";
+      const border = "rgba(219,39,119,.14)";
+      const muted  = "rgba(240,214,232,.42)";
+      const mono   = "'DM Mono','Fira Code',monospace";
+
+      return (
+        <>
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+            *, *::before, *::after { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+            html, body { margin:0; padding:0; background:#0a0008; overflow:hidden; height:100%; overscroll-behavior:none; }
+            #root { height:100%; }
+            input, textarea, button { font-family:inherit; }
+            ::-webkit-scrollbar { display:none; }
+          `}</style>
+
+          <div style={{
+            height:"100dvh",
+            background:"#0a0008",
+            color:"#f0d6e8",
+            fontFamily:"'Outfit','Noto Sans SC',sans-serif",
+            display:"flex",
+            flexDirection:"column",
+            maxWidth:430,
+            margin:"0 auto",
+            overflow:"hidden",
+            position:"relative",
+          }}>
+            <div style={{ height:"env(safe-area-inset-top,44px)", background:"#0a0008", flexShrink:0 }}/>
+
+            <div style={{ display:"flex", alignItems:"center", padding:"8px 16px 10px", gap:12, borderBottom:`1px solid ${border}`, flexShrink:0, background:"rgba(10,0,8,.95)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)" }}>
+              <div style={{ width:40, display:"flex", justifyContent:"flex-start" }}>
+                {view==="phrases" ? (
+                  <button onClick={goBack} style={{ background:"none", border:"none", color:P, cursor:"pointer", padding:"6px 0", display:"flex", alignItems:"center", gap:2 }}>
+                    <Back/> <span style={{ fontSize:15, fontWeight:600 }}>返回</span>
+                  </button>
+                ) : null}
+              </div>
+              <div style={{ flex:1, textAlign:"center" }}>
+                {view==="modules" ? (
+                  <span style={{ fontSize:18, fontWeight:800, letterSpacing:"-.03em", background:"linear-gradient(135deg,#f9a8d4,#db2777)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+                    ✦ Prompt Builder
+                  </span>
+                ) : (
+                  <span style={{ fontSize:16, fontWeight:700 }}>
+                    {curMod?.icon} {curMod?.label.slice(3)}
+                  </span>
+                )}
+              </div>
+              <div style={{ width:62, display:"flex", justifyContent:"flex-end" }}>
+                <button onClick={() => setEditMode(e=>!e)} style={{ padding:"6px 10px", borderRadius:20, border:`1.5px solid ${editMode ? P : border}`, background:editMode ? "rgba(219,39,119,.2)" : "transparent", color:editMode ? "#fce7f3" : muted, fontSize:12.5, fontWeight:editMode?700:400, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+                  <Edit2/> {editMode?"完成":"编辑"}
+                </button>
+              </div>
+            </div>
+
+            {view==="modules" && (
+              <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
+                <div style={{ padding:"14px 14px 0", fontSize:11, color:"rgba(219,39,119,.38)", fontWeight:700, letterSpacing:".09em", textTransform:"uppercase" }}>
+                  14 个模块
+                </div>
+                <div style={{ padding:"8px 14px 0" }}>
+                  {data.map(mod => (
+                    <button key={mod.id} onClick={() => openMod(mod)} style={{ width:"100%", textAlign:"left", padding:"14px 16px", marginBottom:8, borderRadius:16, border:`1px solid ${border}`, background:"rgba(219,39,119,.03)", color:"#f0d6e8", cursor:"pointer", display:"flex", alignItems:"center", gap:14 }}
+                      onTouchStart={e=>{ e.currentTarget.style.background="rgba(219,39,119,.1)"; }}
+                      onTouchEnd={e=>{ e.currentTarget.style.background="rgba(219,39,119,.03)"; }}
+                    >
+                      <span style={{ fontSize:26, lineHeight:1, width:32, textAlign:"center", flexShrink:0 }}>{mod.icon}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:15, fontWeight:600, marginBottom:2 }}>{mod.label}</div>
+                        <div style={{ fontSize:12, color:muted }}>
+                          {mod.categories.length} 种类 · {mod.categories.reduce((a,c)=>a+c.phrases.length,0)} 短语
+                        </div>
+                      </div>
+                      <span style={{ color:"rgba(219,39,119,.3)", flexShrink:0 }}><ChevR/></span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ padding:"4px 14px 120px" }}>
+                  <button onClick={handleReset} style={{ width:"100%", padding:"13px 16px", borderRadius:14, border:`1px dashed rgba(219,39,119,.2)`, background:"transparent", color:"rgba(219,39,119,.38)", fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    <Reset/> 重置所有数据
+                  </button>
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Right actions */}
-          <div style={{ display:"flex",gap:8,flexShrink:0 }}>
-            <TapBtn
-              onClick={()=>setEditMode(e=>!e)}
-              style={{ display:"flex",alignItems:"center",gap:5,height:36,padding:"0 12px",borderRadius:10,border:`1px solid ${editMode?"rgba(219,39,119,.55)":C.border}`,background:editMode?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)",color:editMode?C.text:C.muted,fontSize:13,fontWeight:editMode?700:400 }}
-            >
-              <IEdit/> {editMode?"完成":"编辑"}
-            </TapBtn>
-            <TapBtn onClick={resetAll} style={{ width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,border:`1px solid ${C.border}`,background:"rgba(219,39,119,.04)",color:C.muted }}>
-              <IReset/>
-            </TapBtn>
-          </div>
-        </div>
-
-        {/* ══ BODY ════════════════════════════════════════════ */}
-        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", position:"relative" }}>
-
-          {/* ── HOME: module grid ── */}
-          {onHome && (
-            <div style={{ flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"16px 14px calc(env(safe-area-inset-bottom,16px) + 90px)" }}>
-              <div style={{ fontSize:12,color:"rgba(219,39,119,.45)",fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",marginBottom:12,paddingLeft:2 }}>
-                选择模块 · {data.length} 个
-              </div>
-              {/* 2-column grid */}
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:11 }}>
-                {data.map(mod=>{
-                  const total = mod.categories.reduce((s,c)=>s+c.phrases.length,0);
-                  return (
-                    <TapBtn key={mod.id} onClick={()=>pickMod(mod)}
-                      style={{ display:"flex",flexDirection:"column",alignItems:"flex-start",padding:"16px 14px",borderRadius:16,border:`1.5px solid ${C.border}`,background:C.card,gap:6,textAlign:"left",width:"100%" }}
-                      onTouchStart={e=>{e.currentTarget.style.background="rgba(219,39,119,.1)"; e.currentTarget.style.borderColor=C.pink;}}
-                      onTouchEnd={e=>{e.currentTarget.style.background=C.card; e.currentTarget.style.borderColor=C.border;}}
-                    >
-                      <span style={{ fontSize:26,lineHeight:1 }}>{mod.icon}</span>
-                      <span style={{ fontSize:14,fontWeight:700,color:C.text,lineHeight:1.25,marginTop:2 }}>{mod.label}</span>
-                      <span style={{ fontSize:11.5,color:C.muted,fontFamily:MONO }}>{mod.sub} · {total}条</span>
-                    </TapBtn>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── MODULE VIEW ── */}
-          {!onHome && curMod && (
-            <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden" }}>
-
-              {/* category horizontal tabs */}
-              <div ref={catScrollRef} style={{ display:"flex",gap:8,padding:"10px 14px 10px",overflowX:"auto",WebkitOverflowScrolling:"touch",flexShrink:0,borderBottom:`1px solid ${C.border}` }}>
-                {curMod.categories.map(cat=>{
-                  const active = selCat===cat.id;
-                  return (
-                    <TapBtn key={cat.id} onClick={()=>{ setSelCat(cat.id); setSearch(""); }}
-                      style={{ flexShrink:0,height:38,padding:"0 16px",borderRadius:20,border:`1.5px solid ${active?C.pink:C.border}`,background:active?"rgba(219,39,119,.2)":"transparent",color:active?C.text:C.muted,fontSize:14,fontWeight:active?700:400 }}>
+            {view==="phrases" && curMod && (
+              <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+                <div ref={catRef} style={{ display:"flex", gap:8, overflowX:"auto", padding:"11px 14px", borderBottom:`1px solid ${border}`, flexShrink:0, scrollbarWidth:"none" }}>
+                  {curMod.categories.map(cat => (
+                    <button key={cat.id} onClick={() => { setSelCat(cat.id); setSearch(""); }} style={{ padding:"8px 16px", borderRadius:20, flexShrink:0, border:`1.5px solid ${selCat===cat.id ? P : border}`, background:selCat===cat.id ? "rgba(219,39,119,.2)" : "transparent", color:selCat===cat.id ? "#fce7f3" : muted, fontSize:14, fontWeight:selCat===cat.id?700:400, cursor:"pointer", whiteSpace:"nowrap" }}>
                       {cat.label}
-                      <span style={{ opacity:.45,fontSize:12,marginLeft:5 }}>{cat.phrases.length}</span>
-                    </TapBtn>
-                  );
-                })}
-              </div>
-
-              {curCat && (
-                <>
-                  {/* search bar */}
-                  <div style={{ display:"flex",alignItems:"center",gap:10,margin:"10px 14px 6px",padding:"11px 14px",borderRadius:13,background:"rgba(219,39,119,.06)",border:`1px solid ${C.border}`,flexShrink:0 }}>
-                    <span style={{ color:C.muted,display:"flex",flexShrink:0 }}><ISearch/></span>
-                    <input
-                      value={search} onChange={e=>setSearch(e.target.value)}
-                      placeholder="搜索短语…"
-                      style={{ flex:1,background:"transparent",border:"none",color:C.text,fontSize:16,outline:"none" }}
-                    />
-                    {search && (
-                      <TapBtn onClick={()=>setSearch("")} style={{ display:"flex",padding:3,color:C.muted }}><IX/></TapBtn>
-                    )}
-                  </div>
-
-                  {/* phrase list */}
-                  <div style={{ flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"6px 14px calc(env(safe-area-inset-bottom,16px) + 90px)",display:"flex",flexWrap:"wrap",gap:9,alignContent:"flex-start" }}>
-
-                    {filtered.map((phrase,idx)=>{
-                      const origIdx = curCat.phrases.indexOf(phrase);
-                      const inA = assembled.includes(phrase);
-                      return (
-                        <div key={`${phrase}-${idx}`} style={{ display:"flex",alignItems:"stretch" }}>
-                          <TapBtn
-                            onClick={()=>addPhrase(phrase)}
-                            style={{
-                              padding:"11px 15px",
-                              borderRadius: editMode?"12px 0 0 12px":12,
-                              border:`1.5px solid ${inA?"rgba(219,39,119,.55)":C.border}`,
-                              borderRight: editMode?"none":undefined,
-                              background: inA?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)",
-                              color: inA?C.text:"rgba(240,214,232,.8)",
-                              fontSize:14, fontFamily:MONO,
-                              display:"flex",alignItems:"center",gap:6,userSelect:"none",
-                            }}
-                            onTouchStart={e=>{ if(!inA) e.currentTarget.style.background="rgba(219,39,119,.12)"; }}
-                            onTouchEnd={e=>{ e.currentTarget.style.background=inA?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)"; }}
-                          >
-                            {inA && <span style={{ color:C.pink,fontSize:11 }}>✓</span>}
-                            {phrase}
-                          </TapBtn>
-                          {editMode && (
-                            <TapBtn
-                              onClick={()=>setEditTarget({moduleId:curMod.id,catId:curCat.id,idx:origIdx,phrase,moduleName:curMod.label,catName:curCat.label})}
-                              style={{ padding:"11px 12px",borderRadius:"0 12px 12px 0",border:`1.5px solid ${C.border}`,borderLeft:"none",background:"rgba(219,39,119,.08)",color:"rgba(219,39,119,.65)",display:"flex",alignItems:"center" }}>
-                              <IEdit/>
-                            </TapBtn>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {/* add phrase */}
-                    {editMode && (
-                      <TapBtn
-                        onClick={()=>setAddTarget({moduleId:curMod.id,catId:curCat.id,moduleName:curMod.label,catName:curCat.label})}
-                        style={{ padding:"11px 15px",borderRadius:12,border:"1.5px dashed rgba(219,39,119,.32)",background:"rgba(219,39,119,.04)",color:"rgba(219,39,119,.6)",fontSize:14,fontFamily:MONO,display:"flex",alignItems:"center",gap:7 }}>
-                        <IPlus/> 新增短语
-                      </TapBtn>
-                    )}
-
-                    {search && filtered.length===0 && (
-                      <div style={{ width:"100%",textAlign:"center",color:"rgba(240,214,232,.22)",fontSize:14,padding:"32px 0" }}>
-                        没有匹配「{search}」的结果
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {!curCat && (
-                <div style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",opacity:.3 }}>
-                  <div style={{ fontSize:14,color:C.text }}>↑ 请选择上方种类</div>
+                      <span style={{ opacity:.45, fontSize:12, marginLeft:5 }}>{cat.phrases.length}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+                <div style={{ display:"flex", alignItems:"center", gap:10, margin:"10px 14px 2px", padding:"11px 14px", borderRadius:13, background:"rgba(219,39,119,.07)", border:`1px solid ${border}`, flexShrink:0 }}>
+                  <span style={{ color:muted, display:"flex", flexShrink:0 }}><Search/></span>
+                  <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="搜索短语…"
+                    style={{ flex:1, background:"transparent", border:"none", color:"#fce7f3", fontSize:16, outline:"none" }}
+                  />
+                  {search && (
+                    <button onClick={()=>setSearch("")} style={{ background:"none", border:"none", color:muted, cursor:"pointer", display:"flex", padding:2 }}><X/></button>
+                  )}
+                </div>
+                <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch", padding:"10px 14px 120px", display:"flex", flexWrap:"wrap", gap:9, alignContent:"flex-start" }}>
+                  {filtered.map((phrase, idx) => {
+                    const origIdx = curCat.phrases.indexOf(phrase);
+                    const inA = assembled.includes(phrase);
+                    return (
+                      <div key={`${phrase}-${idx}`} style={{ display:"flex", alignItems:"stretch" }}>
+                        <button onClick={() => addPhrase(phrase)}
+                          style={{ padding:"10px 15px", borderRadius: editMode ? "11px 0 0 11px" : 11, border:`1.5px solid ${inA?"rgba(219,39,119,.55)":border}`, borderRight: editMode?"none":undefined, background:inA?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)", color:inA?"#fce7f3":"rgba(240,214,232,.8)", fontSize:13.5, cursor:"pointer", fontFamily:mono, display:"flex", alignItems:"center", gap:5, userSelect:"none" }}
+                          onTouchStart={e=>{ if(!inA) e.currentTarget.style.background="rgba(219,39,119,.13)"; }}
+                          onTouchEnd={e=>{ e.currentTarget.style.background=inA?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)"; }}
+                        >
+                          {inA && <span style={{ color:P, fontSize:10 }}>✓</span>}
+                          {phrase}
+                        </button>
+                        {editMode && (
+                          <button onClick={() => setEditTarget({ moduleId:curMod.id, catId:curCat.id, idx:origIdx, phrase, moduleName:curMod.label, catName:curCat.label })}
+                            style={{ padding:"10px 11px", borderRadius:"0 11px 11px 0", border:`1.5px solid ${border}`, borderLeft:"none", background:"rgba(219,39,119,.09)", color:"rgba(219,39,119,.6)", cursor:"pointer", display:"flex", alignItems:"center" }}>
+                            <Edit2/>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {editMode && curCat && (
+                    <button onClick={() => setAddTarget({ moduleId:curMod.id, catId:curCat.id, moduleName:curMod.label, catName:curCat.label })}
+                      style={{ padding:"10px 15px", borderRadius:11, border:"1.5px dashed rgba(219,39,119,.32)", background:"rgba(219,39,119,.04)", color:"rgba(219,39,119,.55)", fontSize:13.5, cursor:"pointer", fontFamily:mono, display:"flex", alignItems:"center", gap:7 }}>
+                      <Plus/> 新增短语
+                    </button>
+                  )}
+                  {search && filtered.length===0 && (
+                    <div style={{ width:"100%", textAlign:"center", color:"rgba(240,214,232,.22)", fontSize:14, padding:"24px 0" }}>
+                      没有匹配「{search}」的结果
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
-          {/* ══ BOTTOM BAR ══════════════════════════════════ */}
-          <div style={{
-            position:"absolute", bottom:0, left:0, right:0,
-            background:"rgba(8,0,6,.94)",
-            backdropFilter:"blur(28px)", WebkitBackdropFilter:"blur(28px)",
-            borderTop:`1px solid ${C.border}`,
-            padding:`10px 14px env(safe-area-inset-bottom,20px)`,
-            display:"flex", gap:10, alignItems:"center",
-            zIndex:500,
-          }}>
-            {/* Prompt pill */}
-            <TapBtn onClick={()=>setShowPrompt(true)} style={{
-              flex:1, height:54, borderRadius:15,
-              border:`1.5px solid ${assembled.length?"rgba(219,39,119,.4)":C.border}`,
-              background:assembled.length?"rgba(219,39,119,.14)":"rgba(219,39,119,.04)",
-              color:assembled.length?C.text:C.muted,
-              display:"flex",alignItems:"center",gap:10,padding:"0 16px",
+            <div style={{
+              position:"absolute", bottom:0, left:0, right:0,
+              background:"rgba(8,0,6,.93)",
+              backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
+              borderTop:`1px solid ${border}`,
+              padding:`10px 14px env(safe-area-inset-bottom,16px)`,
+              display:"flex", gap:10, alignItems:"center",
+              flexShrink:0, zIndex:500,
             }}>
-              <span style={{ display:"flex",opacity:.7 }}><IBubble/></span>
-              <span style={{ fontSize:15,fontWeight:assembled.length?700:400,flex:1,textAlign:"left" }}>
-                {assembled.length ? `已选 ${assembled.length} 条` : "查看 Prompt"}
-              </span>
-              {assembled.length>0 && (
-                <span style={{ minWidth:24,height:24,background:`linear-gradient(135deg,${C.pink},#be185d)`,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0 }}>
-                  {assembled.length}
+              <button onClick={() => setShowPrompt(true)} style={{ flex:1, height:52, borderRadius:14, border:`1.5px solid ${assembled.length?"rgba(219,39,119,.4)":border}`, background:assembled.length?"rgba(219,39,119,.15)":"rgba(219,39,119,.04)", color:assembled.length?"#fce7f3":muted, cursor:"pointer", display:"flex", alignItems:"center", gap:10, padding:"0 16px" }}>
+                <span style={{ display:"flex", opacity:.7 }}><Bubble/></span>
+                <span style={{ fontSize:14, fontWeight:assembled.length?600:400 }}>
+                  {assembled.length ? `已选 ${assembled.length} 条` : "查看 Prompt"}
                 </span>
-              )}
-            </TapBtn>
-
-            {/* Quick copy */}
-            <TapBtn onClick={handleCopy} disabled={!assembled.length} style={{
-              width:54,height:54,borderRadius:15,border:"none",
-              background:assembled.length?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.09)",
-              color:assembled.length?"#fff":"rgba(255,255,255,.2)",
-              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-              boxShadow:assembled.length?"0 4px 20px rgba(219,39,119,.38)":"none",
-            }}>
-              {copied ? <ICheck/> : <ICopy/>}
-            </TapBtn>
+                {assembled.length > 0 && (
+                  <span style={{ marginLeft:"auto", minWidth:22, height:22, background:`linear-gradient(135deg,${P},#be185d)`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:"#fff", flexShrink:0 }}>
+                    {assembled.length}
+                  </span>
+                )}
+              </button>
+              <button onClick={handleCopy} disabled={!assembled.length} style={{ width:52, height:52, borderRadius:14, border:"none", background:assembled.length?`linear-gradient(135deg,${P},#9d174d)`:"rgba(219,39,119,.1)", color:assembled.length?"#fff":"rgba(255,255,255,.2)", cursor:assembled.length?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:assembled.length?"0 4px 18px rgba(219,39,119,.35)":"none", flexShrink:0 }}>
+                {copied ? <Check/> : <Copy/>}
+              </button>
+            </div>
           </div>
 
-        </div>{/* /body */}
-      </div>{/* /app */}
+          {showPrompt && <PromptSheet assembled={assembled} onRemove={removePhrase} onCopy={handleCopy} onClear={() => { setAssembled([]); flash("已清空"); }} onClose={() => setShowPrompt(false)} copied={copied} />}
+          {editTarget  && <EditModal target={editTarget} onSave={saveEdit} onDelete={deleteEdit} onClose={() => setEditTarget(null)} />}
+          {addTarget   && <AddModal moduleName={addTarget.moduleName} catName={addTarget.catName} onAdd={addNew} onClose={() => setAddTarget(null)} />}
+          <Toast msg={toast.msg} visible={toast.v} />
+        </>
+      );
+    }
 
-      {/* ── OVERLAYS ── */}
-      {showPrompt  && <PromptSheet assembled={assembled} onRemove={removePhrase} onCopy={handleCopy} onClear={()=>{setAssembled([]);flash("已清空");}} onClose={()=>setShowPrompt(false)} copied={copied}/>}
-      {editTarget  && <EditSheet  target={editTarget} onSave={saveEdit} onDelete={delEdit} onClose={()=>setEditTarget(null)}/>}
-      {addTarget   && <AddSheet   moduleName={addTarget.moduleName} catName={addTarget.catName} onAdd={addNew} onClose={()=>setAddTarget(null)}/>}
-      <Toast msg={toast.msg} visible={toast.v}/>
-    </>
-  );
-}
+    /* ─── RENDER ─────────────────────────────────────────────────────────────── */
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
