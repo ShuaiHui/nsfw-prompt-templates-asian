@@ -1,206 +1,638 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JAV Prompt Builder • flghyy-art</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-  <style>
-    .phrase-tag { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .phrase-tag:hover { transform: translateY(-2px); }
-    .phrase-tag.selected { background-color: #db2777; color: white; border-color: #db2777; }
-    .module-btn { transition: all 0.2s; }
-    .module-btn.active { background-color: #db2777; color: white; }
-  </style>
-</head>
-<body class="bg-zinc-950 text-zinc-100">
-  <div class="max-w-7xl mx-auto px-4 py-6">
-    <!-- 头部 -->
-    <div class="flex items-center justify-between mb-8">
-      <div>
-        <h1 class="text-5xl font-bold tracking-tighter text-pink-500">JAV Prompt Builder</h1>
-        <p class="text-zinc-400 mt-1">flghyy-art 版本 • 14 个模块 • 实时编辑</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/flghyy-art/nsfw-prompt-templates-asian" target="_blank" 
-           class="px-4 py-2 bg-zinc-900 rounded-2xl text-sm flex items-center gap-2 hover:bg-zinc-800">
-          <i class="fab fa-github"></i> <span>GitHub</span>
-        </a>
+import { useState, useEffect, useRef } from "react";
+
+/* ══════════════════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════════════════ */
+const DEFAULT_DATA = [
+  { id:"00", label:"范例",     sub:"00", icon:"✦",
+    categories:[
+      { id:"00-01", label:"基础示例", phrases:["masterpiece","best quality","ultra-detailed","8k uhd","photorealistic"] },
+      { id:"00-02", label:"质量标签", phrases:["highres","absurdres","extremely detailed","intricate details","sharp focus"] },
+    ]},
+  { id:"01", label:"场景主题", sub:"01", icon:"🏠",
+    categories:[
+      { id:"01-01", label:"室内", phrases:["bedroom","hotel room","bathroom","living room","studio apartment","luxury suite"] },
+      { id:"01-02", label:"室外", phrases:["rooftop","garden","balcony","beach","forest clearing","alley"] },
+      { id:"01-03", label:"特殊", phrases:["onsen","love hotel","changing room","school corridor","office after hours"] },
+    ]},
+  { id:"02", label:"景别构图", sub:"02", icon:"🎞",
+    categories:[
+      { id:"02-01", label:"景别", phrases:["close-up","medium shot","full body","cowboy shot","bust shot","extreme close-up"] },
+      { id:"02-02", label:"构图", phrases:["rule of thirds","centered composition","dutch angle","overhead view","from below","from behind"] },
+      { id:"02-03", label:"视角", phrases:["pov","first person view","bird's eye view","worm's eye view","side view"] },
+    ]},
+  { id:"03", label:"光线打光", sub:"03", icon:"☀️",
+    categories:[
+      { id:"03-01", label:"自然光", phrases:["sunlight","golden hour","moonlight","overcast light","dappled light","window light"] },
+      { id:"03-02", label:"人工光", phrases:["studio lighting","rim lighting","backlit","neon lights","candlelight","soft box lighting"] },
+      { id:"03-03", label:"光效",   phrases:["lens flare","volumetric lighting","god rays","bokeh","light particles","glowing"] },
+    ]},
+  { id:"04", label:"画风渲染", sub:"04", icon:"🎨",
+    categories:[
+      { id:"04-01", label:"写实", phrases:["photorealistic","hyperrealistic","cinematic","film grain","RAW photo","DSLR"] },
+      { id:"04-02", label:"插画", phrases:["anime style","manga style","cel shading","flat design","illustration","line art"] },
+      { id:"04-03", label:"引擎", phrases:["unreal engine 5","octane render","cinema 4d","blender render","ray tracing"] },
+    ]},
+  { id:"05", label:"人物外貌", sub:"05", icon:"👤",
+    categories:[
+      { id:"05-01", label:"发型", phrases:["long black hair","short bob","twin tails","ponytail","bangs","wavy hair","brown hair"] },
+      { id:"05-02", label:"眼睛", phrases:["large eyes","almond eyes","double eyelids","brown eyes","doe eyes"] },
+      { id:"05-03", label:"体型", phrases:["slim","petite","athletic build","tall","hourglass figure"] },
+    ]},
+  { id:"06", label:"服装配饰", sub:"06", icon:"👗",
+    categories:[
+      { id:"06-01", label:"日常", phrases:["school uniform","office wear","casual wear","sundress","jeans and t-shirt"] },
+      { id:"06-02", label:"特殊", phrases:["qipao","kimono","yukata","maid outfit","nurse uniform","bunny suit"] },
+      { id:"06-03", label:"配饰", phrases:["choker","earrings","hair ribbon","glasses","anklet","bracelet"] },
+    ]},
+  { id:"07", label:"表情神态", sub:"07", icon:"😊",
+    categories:[
+      { id:"07-01", label:"表情", phrases:["smile","shy expression","surprised","blushing","pouting","serious"] },
+      { id:"07-02", label:"情绪", phrases:["confident","embarrassed","playful","dreamy","seductive look","innocent"] },
+    ]},
+  { id:"08", label:"姿势动作", sub:"08", icon:"🧍",
+    categories:[
+      { id:"08-01", label:"站姿", phrases:["standing","leaning against wall","hands on hips","arms crossed","one hand raised"] },
+      { id:"08-02", label:"坐姿", phrases:["sitting","kneeling","cross-legged","sitting on bed","perched on edge"] },
+      { id:"08-03", label:"躺姿", phrases:["lying down","lying on back","curled up","sprawled","side-lying"] },
+    ]},
+  { id:"09", label:"色调滤镜", sub:"09", icon:"🎭",
+    categories:[
+      { id:"09-01", label:"冷暖", phrases:["warm tones","cool tones","golden tones","blue hour","rose tint"] },
+      { id:"09-02", label:"特效", phrases:["vignette","chromatic aberration","film grain","bloom effect","desaturated"] },
+      { id:"09-03", label:"基调", phrases:["dreamy atmosphere","moody","vibrant","soft pastel","high contrast","cinematic grade"] },
+    ]},
+  { id:"10", label:"镜头参数", sub:"10", icon:"📷",
+    categories:[
+      { id:"10-01", label:"焦距", phrases:["35mm lens","50mm lens","85mm lens","135mm portrait lens","wide angle 24mm"] },
+      { id:"10-02", label:"景深", phrases:["f/1.4 bokeh","f/1.8 depth of field","shallow depth of field","deep focus","tilt-shift"] },
+      { id:"10-03", label:"快门", phrases:["motion blur","frozen motion","long exposure","crisp detail"] },
+    ]},
+  { id:"11", label:"负面提示", sub:"11", icon:"🚫",
+    categories:[
+      { id:"11-01", label:"质量", phrases:["(worst quality:2)","(low quality:2)","blurry","jpeg artifacts","watermark","text"] },
+      { id:"11-02", label:"解剖", phrases:["bad anatomy","extra limbs","missing fingers","distorted face","deformed hands"] },
+      { id:"11-03", label:"其他", phrases:["ugly","duplicate","error","out of frame","cropped","username"] },
+    ]},
+  { id:"12", label:"氛围道具", sub:"12", icon:"🌸",
+    categories:[
+      { id:"12-01", label:"道具", phrases:["wine glass","book","coffee cup","smartphone","rose","candle"] },
+      { id:"12-02", label:"环境", phrases:["cherry blossoms","rain drops","city lights","starry sky","snow","autumn leaves"] },
+    ]},
+  { id:"13", label:"LoRA 权重", sub:"13", icon:"⚙️",
+    categories:[
+      { id:"13-01", label:"风格LoRA",  phrases:["<lora:add_detail:0.8>","<lora:more_details:0.5>","<lora:face_yiyi:0.7>"] },
+      { id:"13-02", label:"权重控制", phrases:["(phrase:1.2)","(phrase:1.5)","(phrase:0.8)","(phrase:0.5)","[[phrase]]","((phrase))"] },
+    ]},
+  { id:"14", label:"人格卡片", sub:"14", icon:"🪪",
+    categories:[
+      { id:"14-01", label:"基础人设", phrases:["1girl","solo","asian","japanese","chinese","korean"] },
+      { id:"14-02", label:"职业人设", phrases:["student","office lady","idol","model","nurse","teacher","stewardess"] },
+      { id:"14-03", label:"年龄标签", phrases:["young adult","adult","mature female","20s"] },
+    ]},
+];
+
+const KEY = "pb_iphone_v1";
+const load    = () => { try { const r=localStorage.getItem(KEY); return r?JSON.parse(r):DEFAULT_DATA; }catch{return DEFAULT_DATA;} };
+const persist = d  => { try { localStorage.setItem(KEY,JSON.stringify(d)); }catch{} };
+
+/* ══════════════════════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════════════════════ */
+const C = {
+  bg:     "#0b0009",
+  card:   "#150011",
+  pink:   "#db2777",
+  pinkD:  "#9d174d",
+  pinkBg: "rgba(219,39,119,.12)",
+  pinkBd: "rgba(219,39,119,.22)",
+  text:   "#fce7f3",
+  muted:  "rgba(240,214,232,.45)",
+  border: "rgba(219,39,119,.18)",
+};
+const MONO = "'DM Mono','Fira Code',monospace";
+
+/* ══════════════════════════════════════════════════════════
+   ICONS
+══════════════════════════════════════════════════════════ */
+const Ico = ({ d, size=20, stroke=2.2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <path d={d}/>
+  </svg>
+);
+const IBack  = () => <Ico d="M15 18l-6-6 6-6" size={22} stroke={2.5}/>;
+const ICopy  = () => (
+  <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+);
+const ITrash = () => (
+  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+  </svg>
+);
+const IEdit  = () => (
+  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+const IPlus  = () => <Ico d="M12 5v14M5 12h14" size={18} stroke={2.5}/>;
+const IX     = () => <Ico d="M18 6L6 18M6 6l12 12" size={18} stroke={2.5}/>;
+const ICheck = () => <Ico d="M20 6L9 17l-5-5" size={17} stroke={2.5}/>;
+const ISearch= () => (
+  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
+const IBubble= () => (
+  <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+);
+const IReset = () => (
+  <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.49"/>
+  </svg>
+);
+
+/* ══════════════════════════════════════════════════════════
+   PRIMITIVES
+══════════════════════════════════════════════════════════ */
+function TapBtn({ onClick, style, children, disabled }) {
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      style={{
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
+        cursor: disabled ? "not-allowed" : "pointer",
+        border: "none",
+        background: "none",
+        padding: 0,
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Toast({ msg, visible }) {
+  return (
+    <div style={{
+      position:"fixed", bottom:"calc(env(safe-area-inset-bottom,16px) + 88px)",
+      left:"50%", transform:`translateX(-50%) translateY(${visible?0:8}px)`,
+      opacity: visible?1:0, transition:"all .22s ease",
+      background:"rgba(219,39,119,.95)", color:"#fff",
+      padding:"10px 22px", borderRadius:30, fontSize:14, fontWeight:700,
+      zIndex:9000, pointerEvents:"none", whiteSpace:"nowrap",
+      boxShadow:"0 6px 24px rgba(219,39,119,.45)",
+    }}>
+      {msg}
+    </div>
+  );
+}
+
+/* ── Bottom Sheet ── */
+function Sheet({ onDismiss, children, title, maxH="88vh" }) {
+  return (
+    <div
+      onClick={e => e.target===e.currentTarget && onDismiss()}
+      style={{ position:"fixed",inset:0,zIndex:3000,background:"rgba(6,0,5,.78)",backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",display:"flex",alignItems:"flex-end" }}
+    >
+      <div style={{ width:"100%",background:C.card,borderRadius:"22px 22px 0 0",border:`1px solid ${C.pinkBd}`,borderBottom:"none",maxHeight:maxH,display:"flex",flexDirection:"column",boxShadow:"0 -20px 60px rgba(219,39,119,.22)",paddingBottom:"env(safe-area-inset-bottom,16px)" }}>
+        {/* drag handle */}
+        <div style={{ display:"flex",justifyContent:"center",padding:"10px 0 0",flexShrink:0 }}>
+          <div style={{ width:42,height:4,borderRadius:4,background:"rgba(219,39,119,.3)" }}/>
+        </div>
+        {title && (
+          <div style={{ padding:"10px 20px 12px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
+            <div style={{ fontSize:18,fontWeight:700,color:C.text }}>{title}</div>
+          </div>
+        )}
+        {children}
       </div>
     </div>
+  );
+}
 
-    <!-- 模块导航 -->
-    <div id="module-nav" class="flex flex-wrap gap-2 mb-8"></div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <!-- 左侧 -->
-      <div class="lg:col-span-7">
-        <div id="category-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6"></div>
-        <div id="phrase-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+/* ── Edit Sheet ── */
+function EditSheet({ target, onSave, onDelete, onClose }) {
+  const [v, setV] = useState(target.phrase);
+  const ref = useRef();
+  useEffect(() => { setTimeout(()=>ref.current?.focus(),180); }, []);
+  return (
+    <Sheet onDismiss={onClose} maxH="70vh">
+      <div style={{ padding:"14px 20px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
+        <div style={{ fontSize:11,color:"rgba(219,39,119,.5)",fontFamily:MONO,marginBottom:3,letterSpacing:".04em" }}>{target.moduleName} › {target.catName}</div>
+        <div style={{ fontSize:20,fontWeight:700,color:C.text }}>编辑短语</div>
       </div>
+      <div style={{ padding:"16px 20px 12px",flexShrink:0 }}>
+        <textarea ref={ref} value={v} onChange={e=>setV(e.target.value)} rows={3}
+          style={{ width:"100%",boxSizing:"border-box",background:"rgba(219,39,119,.07)",border:`1.5px solid ${C.pinkBd}`,borderRadius:14,color:C.text,fontSize:16,lineHeight:1.65,padding:"13px 15px",resize:"none",outline:"none",fontFamily:MONO,WebkitAppearance:"none" }}
+          onFocus={e=>{e.target.style.borderColor="rgba(219,39,119,.7)";}}
+          onBlur={e=>{e.target.style.borderColor=C.pinkBd;}}
+        />
+      </div>
+      <div style={{ padding:"0 20px 4px",display:"flex",gap:10,flexShrink:0 }}>
+        <TapBtn onClick={onDelete} style={{ flex:1,height:54,borderRadius:14,border:"1.5px solid rgba(239,68,68,.3)",background:"rgba(239,68,68,.08)",color:"#fca5a5",fontSize:15,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}><ITrash/> 删除</TapBtn>
+        <TapBtn onClick={onClose}  style={{ flex:1,height:54,borderRadius:14,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,.04)",color:C.muted,fontSize:15 }}>取消</TapBtn>
+        <TapBtn onClick={()=>v.trim()&&onSave(v.trim())} style={{ flex:2,height:54,borderRadius:14,border:"none",background:v.trim()?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.15)",color:v.trim()?"#fff":"rgba(255,255,255,.3)",fontSize:15,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:v.trim()?"0 4px 18px rgba(219,39,119,.35)":"none" }}><ICheck/> 保存</TapBtn>
+      </div>
+    </Sheet>
+  );
+}
 
-      <!-- 右侧 -->
-      <div class="lg:col-span-5">
-        <div class="bg-zinc-900 rounded-3xl p-8 sticky top-6">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="font-semibold text-xl">已组装 Prompt</h2>
-            <span id="selected-count" class="px-3 py-1 bg-pink-600 text-white text-xs rounded-full font-mono">0</span>
+/* ── Add Sheet ── */
+function AddSheet({ moduleName, catName, onAdd, onClose }) {
+  const [v, setV] = useState("");
+  const ref = useRef();
+  useEffect(() => { setTimeout(()=>ref.current?.focus(),180); }, []);
+  return (
+    <Sheet onDismiss={onClose} maxH="55vh">
+      <div style={{ padding:"14px 20px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0 }}>
+        <div style={{ fontSize:11,color:"rgba(219,39,119,.5)",fontFamily:MONO,marginBottom:3 }}>{moduleName} › {catName}</div>
+        <div style={{ fontSize:20,fontWeight:700,color:C.text }}>添加新短语</div>
+      </div>
+      <div style={{ padding:"16px 20px 12px",flexShrink:0 }}>
+        <textarea ref={ref} value={v} onChange={e=>setV(e.target.value)} rows={3} placeholder="输入新的提示词短语…"
+          style={{ width:"100%",boxSizing:"border-box",background:"rgba(219,39,119,.07)",border:`1.5px solid ${C.pinkBd}`,borderRadius:14,color:C.text,fontSize:16,lineHeight:1.65,padding:"13px 15px",resize:"none",outline:"none",fontFamily:MONO,WebkitAppearance:"none" }}
+          onFocus={e=>{e.target.style.borderColor="rgba(219,39,119,.7)";}}
+          onBlur={e=>{e.target.style.borderColor=C.pinkBd;}}
+        />
+      </div>
+      <div style={{ padding:"0 20px 4px",display:"flex",gap:10,flexShrink:0 }}>
+        <TapBtn onClick={onClose} style={{ flex:1,height:54,borderRadius:14,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,.04)",color:C.muted,fontSize:15 }}>取消</TapBtn>
+        <TapBtn onClick={()=>v.trim()&&onAdd(v.trim())} style={{ flex:2,height:54,borderRadius:14,border:"none",background:v.trim()?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.15)",color:v.trim()?"#fff":"rgba(255,255,255,.3)",fontSize:15,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:v.trim()?"0 4px 18px rgba(219,39,119,.35)":"none" }}><IPlus/> 添加</TapBtn>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ── Prompt Sheet ── */
+function PromptSheet({ assembled, onRemove, onCopy, onClear, onClose, copied }) {
+  const prompt = assembled.join(", ");
+  return (
+    <Sheet onDismiss={onClose} title={`已组装 Prompt · ${assembled.length} 条`} maxH="88vh">
+      {/* chips */}
+      <div style={{ padding:"12px 16px 10px",borderBottom:`1px solid ${C.border}`,display:"flex",flexWrap:"wrap",gap:7,maxHeight:180,overflowY:"auto",WebkitOverflowScrolling:"touch",flexShrink:0 }}>
+        {assembled.length===0 ? (
+          <span style={{ color:C.muted,fontSize:14,fontStyle:"italic" }}>还没有选择任何短语</span>
+        ) : assembled.map((p,i)=>(
+          <TapBtn key={i} onClick={()=>onRemove(p)}
+            style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:10,border:`1.5px solid rgba(219,39,119,.35)`,background:"rgba(219,39,119,.13)",color:C.text,fontSize:13,fontFamily:MONO }}>
+            {p} <span style={{ opacity:.45,fontSize:11 }}>×</span>
+          </TapBtn>
+        ))}
+      </div>
+      {/* full text */}
+      <textarea readOnly value={prompt} placeholder="prompt 将在这里显示…"
+        style={{ flex:1,background:"transparent",border:"none",color:"rgba(252,231,243,.75)",fontSize:14,lineHeight:1.75,padding:"14px 18px",resize:"none",outline:"none",fontFamily:MONO,WebkitOverflowScrolling:"touch" }}
+      />
+      {/* actions */}
+      <div style={{ padding:"10px 16px 4px",display:"flex",gap:10,flexShrink:0 }}>
+        <TapBtn onClick={onClear} disabled={!assembled.length}
+          style={{ width:54,height:54,borderRadius:14,border:`1.5px solid ${C.border}`,background:"rgba(219,39,119,.06)",color:C.muted,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+          <ITrash/>
+        </TapBtn>
+        <TapBtn onClick={onCopy} disabled={!assembled.length}
+          style={{ flex:1,height:54,borderRadius:14,border:"none",background:assembled.length?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.15)",color:assembled.length?"#fff":"rgba(255,255,255,.3)",fontSize:16,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:assembled.length?"0 4px 20px rgba(219,39,119,.38)":"none" }}>
+          {copied ? <><ICheck/> 已复制</> : <><ICopy/> 复制 Prompt</>}
+        </TapBtn>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════════════ */
+export default function App() {
+  const [data, setData]           = useState(load);
+  const [selMod, setSelMod]       = useState(null);   // module id
+  const [selCat, setSelCat]       = useState(null);   // category id
+  const [assembled, setAssembled] = useState([]);
+  const [editMode, setEditMode]   = useState(false);
+  const [search, setSearch]       = useState("");
+  const [showPrompt, setShowPrompt]= useState(false);
+  const [editTarget, setEditTarget]= useState(null);
+  const [addTarget, setAddTarget]  = useState(null);
+  const [toast, setToast]          = useState({ msg:"", v:false });
+  const [copied, setCopied]        = useState(false);
+  const catScrollRef               = useRef();
+  const timerRef                   = useRef();
+
+  useEffect(() => { persist(data); }, [data]);
+
+  /* toast */
+  const flash = msg => {
+    clearTimeout(timerRef.current);
+    setToast({ msg, v:true });
+    timerRef.current = setTimeout(()=>setToast(t=>({...t,v:false})),1800);
+  };
+
+  /* copy */
+  const handleCopy = async () => {
+    if (!assembled.length) return;
+    try {
+      await navigator.clipboard.writeText(assembled.join(", "));
+      setCopied(true); flash("已复制 ✓");
+      setTimeout(()=>setCopied(false),2200);
+    } catch { flash("复制失败"); }
+  };
+
+  /* assembled ops */
+  const addPhrase    = p => { if(!assembled.includes(p)){ setAssembled(a=>[...a,p]); flash("已添加"); } };
+  const removePhrase = p => setAssembled(a=>a.filter(x=>x!==p));
+
+  /* nav */
+  const goBack = () => {
+    if (selCat) { setSelCat(null); setSearch(""); }
+    else        { setSelMod(null); setSelCat(null); setSearch(""); }
+  };
+  const pickMod = mod => { setSelMod(mod.id); setSelCat(mod.categories[0]?.id || null); };
+
+  /* edit ops */
+  const saveEdit = newP => {
+    setData(d=>d.map(m=>m.id!==editTarget.moduleId?m:{ ...m, categories:m.categories.map(c=>c.id!==editTarget.catId?c:{ ...c, phrases:c.phrases.map((p,i)=>i===editTarget.idx?newP:p) }) }));
+    setAssembled(a=>a.map(p=>p===editTarget.phrase?newP:p));
+    setEditTarget(null); flash("修改已保存");
+  };
+  const delEdit = () => {
+    setData(d=>d.map(m=>m.id!==editTarget.moduleId?m:{ ...m, categories:m.categories.map(c=>c.id!==editTarget.catId?c:{ ...c, phrases:c.phrases.filter((_,i)=>i!==editTarget.idx) }) }));
+    setAssembled(a=>a.filter(p=>p!==editTarget.phrase));
+    setEditTarget(null); flash("已删除");
+  };
+  const addNew = p => {
+    setData(d=>d.map(m=>m.id!==addTarget.moduleId?m:{ ...m, categories:m.categories.map(c=>c.id!==addTarget.catId?c:{ ...c, phrases:[...c.phrases,p] }) }));
+    setAddTarget(null); flash("已添加短语");
+  };
+  const resetAll = () => {
+    if(!window.confirm("重置所有数据？")) return;
+    setData(DEFAULT_DATA); setAssembled([]); flash("已重置");
+  };
+
+  /* derived */
+  const curMod  = data.find(m=>m.id===selMod);
+  const curCat  = curMod?.categories.find(c=>c.id===selCat);
+  const sl      = search.toLowerCase();
+  const filtered= curCat ? (search ? curCat.phrases.filter(p=>p.toLowerCase().includes(sl)) : curCat.phrases) : [];
+
+  /* screen: home / module+cat */
+  const onHome = !selMod;
+
+  /* ── STATUS BAR PLACEHOLDER HEIGHT (Dynamic Island) ── */
+  const statusH = "env(safe-area-inset-top, 50px)";
+  const bottomH = "env(safe-area-inset-bottom, 16px)";
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+        html, body, #root { height: 100%; background: ${C.bg}; overscroll-behavior: none; }
+        body { -webkit-text-size-adjust: 100%; }
+        ::-webkit-scrollbar { display: none; }
+        input, textarea, button { font-family: inherit; -webkit-appearance: none; }
+        /* prevent double-tap zoom on all buttons */
+        button { touch-action: manipulation; }
+      `}</style>
+
+      <div style={{
+        position:"fixed", inset:0,
+        background: C.bg,
+        color: C.text,
+        fontFamily:"'Outfit','Noto Sans SC',sans-serif",
+        display:"flex", flexDirection:"column",
+        /* respect Dynamic Island / home indicator */
+        paddingTop: statusH,
+        paddingBottom: 0,
+      }}>
+
+        {/* ══ HEADER ══════════════════════════════════════════ */}
+        <div style={{
+          display:"flex", alignItems:"center",
+          padding:"0 16px",
+          height:56, flexShrink:0,
+          borderBottom:`1px solid ${C.border}`,
+          background:"rgba(11,0,9,.9)",
+          backdropFilter:"blur(20px)",
+          WebkitBackdropFilter:"blur(20px)",
+          gap:10,
+        }}>
+          {/* Back / Logo */}
+          {!onHome ? (
+            <TapBtn onClick={goBack} style={{ display:"flex",alignItems:"center",justifyContent:"center",width:40,height:40,borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(219,39,119,.07)",color:C.text,flexShrink:0 }}>
+              <IBack/>
+            </TapBtn>
+          ) : (
+            <span style={{ fontSize:22,fontWeight:900,background:"linear-gradient(135deg,#f9a8d4,#db2777)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-.03em",flexShrink:0 }}>
+              ✦ PB
+            </span>
+          )}
+
+          {/* Title */}
+          <div style={{ flex:1,minWidth:0,overflow:"hidden" }}>
+            {onHome ? (
+              <div style={{ fontSize:15,fontWeight:700,color:C.text }}>Prompt Builder</div>
+            ) : (
+              <div>
+                <div style={{ fontSize:16,fontWeight:700,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>
+                  {curMod?.label}
+                </div>
+              </div>
+            )}
           </div>
-          
-          <textarea id="prompt-output" readonly 
-                    class="w-full h-[380px] bg-zinc-950 text-sm p-6 rounded-2xl font-mono resize-y border border-zinc-800"></textarea>
 
-          <div class="grid grid-cols-3 gap-3 mt-6">
-            <button onclick="copyPrompt()" class="flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 py-4 rounded-2xl font-medium transition">
-              <i class="fas fa-copy"></i> <span>复制</span>
-            </button>
-            <button onclick="clearAll()" class="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 py-4 rounded-2xl transition">
-              <i class="fas fa-trash"></i> <span>清空</span>
-            </button>
-            <button onclick="toggleEditMode()" id="edit-btn" class="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 py-4 rounded-2xl transition">
-              <i class="fas fa-edit"></i> <span>编辑</span>
-            </button>
+          {/* Right actions */}
+          <div style={{ display:"flex",gap:8,flexShrink:0 }}>
+            <TapBtn
+              onClick={()=>setEditMode(e=>!e)}
+              style={{ display:"flex",alignItems:"center",gap:5,height:36,padding:"0 12px",borderRadius:10,border:`1px solid ${editMode?"rgba(219,39,119,.55)":C.border}`,background:editMode?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)",color:editMode?C.text:C.muted,fontSize:13,fontWeight:editMode?700:400 }}
+            >
+              <IEdit/> {editMode?"完成":"编辑"}
+            </TapBtn>
+            <TapBtn onClick={resetAll} style={{ width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,border:`1px solid ${C.border}`,background:"rgba(219,39,119,.04)",color:C.muted }}>
+              <IReset/>
+            </TapBtn>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 编辑弹窗（已放大版） -->
-  <div id="modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[100]">
-    <div class="bg-zinc-900 rounded-3xl w-full max-w-2xl mx-4 p-10">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-3xl font-bold">编辑提示词</h3>
-        <button onclick="closeModal()" class="text-zinc-400 hover:text-white text-2xl">×</button>
-      </div>
-      
-      <textarea id="edit-input" class="w-full h-48 bg-zinc-800 border border-zinc-700 p-6 rounded-2xl text-lg font-mono resize-y"></textarea>
-      
-      <div class="flex gap-4 mt-8">
-        <button onclick="saveEdit()" class="flex-1 bg-pink-600 hover:bg-pink-700 py-4 rounded-2xl font-medium text-lg">保存修改</button>
-        <button onclick="deleteCurrentPhrase()" class="flex-1 bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-medium text-lg">删除这条</button>
-        <button onclick="closeModal()" class="flex-1 bg-zinc-700 hover:bg-zinc-600 py-4 rounded-2xl font-medium text-lg">取消</button>
-      </div>
-    </div>
-  </div>
+        {/* ══ BODY ════════════════════════════════════════════ */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", position:"relative" }}>
 
-  <script>
-    const promptData = { /* 保持之前完整14模块数据不变 */ 
-      "00-范例": { "校园": ["classroom back row, sailor uniform unbuttoned, one breast exposed", "library desk under, skirt hiked, panties aside", "sports storage room, gym uniform lifted"], "家居": ["bedroom morning light, white shirt open, bare breasts", "kitchen island, apron only, sideboob"], "职场": ["after hours office, boss desk, blouse unbuttoned", "meeting room at night, skirt lifted"], "温泉": ["steamy onsen, outdoor bath, towel slipping", "bubble bath, wet skin glistening"] },
-      "01-场景主题": { "室内私密": ["love hotel pink room, ceiling mirror, rotating bed", "messy bedroom, unmade sheets, morning after"], "洗浴温泉": ["steamy onsen, rotenburo, outdoor hot spring", "bubble bath, wet bathroom floor"], "学校": ["empty classroom after school, teacher desk", "school rooftop at sunset, chain link fence"], "职场": ["after hours office, boss desk", "meeting room at night, glass wall"], "交通": ["crowded train, last train at night", "taxi backseat at night, street lights"] },
-      "02-景别构图": { "景别": ["medium shot, waist-up", "close-up, face filling frame", "full body shot", "extreme close-up on pussy"], "视角": ["POV, first person view", "low angle looking up", "over the shoulder", "voyeur angle through door crack"], "设备": ["iPhone selfie", "DSLR photo, shallow depth of field", "CCTV surveillance footage", "35mm film camera"], "构图": ["rule of thirds", "golden spiral", "tight crop on body", "frame within frame doorway"] },
-      "03-裸露液体": { "6级裸露": ["L3 half naked, bra pushed up", "L4 only panties remaining", "L5 fully nude", "L6 legs spread wide, pussy displayed"], "衣物状态": ["blouse unbuttoned", "skirt lifted to waist", "towel slipping off shoulder", "wet clothes clinging to body", "torn stockings"], "液体": ["single drop of cum on lip", "sweat glistening on skin", "wet pussy glistening", "thin streak of semen"] },
-      "04-服装专项": { "制服": ["sailor uniform, pleated miniskirt", "JK school uniform, loose tie", "nurse uniform, low-cut"], "和风": ["yukata slipping off shoulder", "kimono falling open, loose obi"], "情趣内衣": ["lace lingerie set", "crotchless panties", "garter belt and stockings only"], "状态变化": ["blouse unbuttoned showing breasts", "skirt hiked up, panties aside"] },
-      "05-光影氛围": { "专业布光": ["rim light, golden hair glow", "Rembrandt dramatic side light", "butterfly lighting, glamorous", "soft box, even skin glow"], "情色专用": ["backlit nude silhouette", "sweat glistening under warm light", "neon pink blue split lighting", "candlelit intimate glow"], "色温": ["warm candlelight, golden skin", "golden hour window light", "cool moonlight blue", "neon love hotel glow"] },
-      "06-姿势动作": { "静态姿势": ["sitting on desk, legs spread", "kneeling on bed, looking up", "lying on back, legs open wide", "standing bent over"], "口交颜射": ["POV deep throat blowjob", "cum on face, eyes looking up", "tongue out, semen dripping from chin"], "多人动态": ["doggy style from behind", "missionary, legs over shoulders", "cowgirl riding"] },
-      "07-表情眼神": { "表情": ["shy expression, blushing cheeks", "seductive smile, biting lip", "ecstasy, eyes rolled back", "teary ahegao face"], "眼神": ["looking up through long lashes", "avoiding eye contact, embarrassed", "direct eye contact, lustful"] },
-      "08-风格胶片": { "胶片模拟": ["Kodak Portra 400, warm skin tones", "Fuji Pro 400H, dreamy pastel", "Kodak Tri-X, high contrast B&W", "Ektar 100, vibrant colors"], "电影镜头": ["cinematic film still, ARRI Alexa", "Cooke lens, soft bokeh", "anamorphic lens flare"] },
-      "09-妆容专项": { "妆容": ["natural makeup, smudged red lipstick", "glossy lips, heavy eyeliner", "sweat ruined makeup, running mascara", "cute pink blush, glossy eyes"] },
-      "10-发型饰品": { "发型": ["long black hair, messy after sex", "ponytail, hair pulled back", "wet hair clinging to face"], "饰品": ["cat ears headband", "black choker necklace", "pearl earrings", "glasses slipping down nose"] },
-      "11-瑕疵细节": { "真实细节": ["beauty mark on cheek", "freckles across nose", "chipped nail polish", "small scar on inner thigh", "sweat droplets on collarbone"] },
-      "12-纹身标记": { "纹身": ["small heart tattoo above left breast", "tramp stamp cherry blossom", "tribal lower back tattoo with skin fusion"] },
-      "13-道具宠物": { "道具": ["vibrator pressed on clit", "handcuffs on wrists", "wine glass spilled on sheets", "candle wax dripping on skin"], "宠物": ["cat watching from the bed", "dog collar and leash"] },
-      "14-人格卡片": { "身份职业": ["office lady, shy subordinate", "married woman next door", "innocent high school student", "gentle but lewd nurse", "secret slut idol singer"] }
-    };
+          {/* ── HOME: module grid ── */}
+          {onHome && (
+            <div style={{ flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"16px 14px calc(env(safe-area-inset-bottom,16px) + 90px)" }}>
+              <div style={{ fontSize:12,color:"rgba(219,39,119,.45)",fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",marginBottom:12,paddingLeft:2 }}>
+                选择模块 · {data.length} 个
+              </div>
+              {/* 2-column grid */}
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:11 }}>
+                {data.map(mod=>{
+                  const total = mod.categories.reduce((s,c)=>s+c.phrases.length,0);
+                  return (
+                    <TapBtn key={mod.id} onClick={()=>pickMod(mod)}
+                      style={{ display:"flex",flexDirection:"column",alignItems:"flex-start",padding:"16px 14px",borderRadius:16,border:`1.5px solid ${C.border}`,background:C.card,gap:6,textAlign:"left",width:"100%" }}
+                      onTouchStart={e=>{e.currentTarget.style.background="rgba(219,39,119,.1)"; e.currentTarget.style.borderColor=C.pink;}}
+                      onTouchEnd={e=>{e.currentTarget.style.background=C.card; e.currentTarget.style.borderColor=C.border;}}
+                    >
+                      <span style={{ fontSize:26,lineHeight:1 }}>{mod.icon}</span>
+                      <span style={{ fontSize:14,fontWeight:700,color:C.text,lineHeight:1.25,marginTop:2 }}>{mod.label}</span>
+                      <span style={{ fontSize:11.5,color:C.muted,fontFamily:MONO }}>{mod.sub} · {total}条</span>
+                    </TapBtn>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
-    let currentModule = "", currentCategory = "", selectedPhrases = [], editMode = false, editingInfo = null;
+          {/* ── MODULE VIEW ── */}
+          {!onHome && curMod && (
+            <div style={{ flex:1,display:"flex",flexDirection:"column",overflow:"hidden" }}>
 
-    function renderModuleNav() {
-      const container = document.getElementById('module-nav');
-      container.innerHTML = Object.keys(promptData).map(mod => `
-        <button onclick="loadModule('${mod}')" class="module-btn px-5 py-2.5 text-sm rounded-2xl bg-zinc-900 hover:bg-zinc-800 ${currentModule === mod ? 'active' : ''}">${mod}</button>
-      `).join('');
-    }
+              {/* category horizontal tabs */}
+              <div ref={catScrollRef} style={{ display:"flex",gap:8,padding:"10px 14px 10px",overflowX:"auto",WebkitOverflowScrolling:"touch",flexShrink:0,borderBottom:`1px solid ${C.border}` }}>
+                {curMod.categories.map(cat=>{
+                  const active = selCat===cat.id;
+                  return (
+                    <TapBtn key={cat.id} onClick={()=>{ setSelCat(cat.id); setSearch(""); }}
+                      style={{ flexShrink:0,height:38,padding:"0 16px",borderRadius:20,border:`1.5px solid ${active?C.pink:C.border}`,background:active?"rgba(219,39,119,.2)":"transparent",color:active?C.text:C.muted,fontSize:14,fontWeight:active?700:400 }}>
+                      {cat.label}
+                      <span style={{ opacity:.45,fontSize:12,marginLeft:5 }}>{cat.phrases.length}</span>
+                    </TapBtn>
+                  );
+                })}
+              </div>
 
-    function loadModule(mod) {
-      currentModule = mod; renderModuleNav();
-      const cats = Object.keys(promptData[mod]);
-      document.getElementById('category-grid').innerHTML = cats.map(cat => `
-        <div onclick="loadPhrases('${mod}', '${cat}')" class="bg-zinc-900 hover:bg-zinc-800 p-5 rounded-2xl cursor-pointer text-center border border-zinc-800 hover:border-pink-500"><div class="font-medium">${cat}</div></div>
-      `).join('');
-      document.getElementById('phrase-grid').innerHTML = '';
-    }
+              {curCat && (
+                <>
+                  {/* search bar */}
+                  <div style={{ display:"flex",alignItems:"center",gap:10,margin:"10px 14px 6px",padding:"11px 14px",borderRadius:13,background:"rgba(219,39,119,.06)",border:`1px solid ${C.border}`,flexShrink:0 }}>
+                    <span style={{ color:C.muted,display:"flex",flexShrink:0 }}><ISearch/></span>
+                    <input
+                      value={search} onChange={e=>setSearch(e.target.value)}
+                      placeholder="搜索短语…"
+                      style={{ flex:1,background:"transparent",border:"none",color:C.text,fontSize:16,outline:"none" }}
+                    />
+                    {search && (
+                      <TapBtn onClick={()=>setSearch("")} style={{ display:"flex",padding:3,color:C.muted }}><IX/></TapBtn>
+                    )}
+                  </div>
 
-    function loadPhrases(mod, cat) {
-      currentCategory = cat;
-      const phrases = promptData[mod][cat];
-      document.getElementById('phrase-grid').innerHTML = phrases.map((phrase, index) => `
-        <div onclick="${editMode ? `editPhrase('${phrase}', ${index})` : `togglePhrase('${phrase}')`}" class="phrase-tag bg-zinc-800 hover:bg-zinc-700 px-4 py-3 rounded-2xl text-sm cursor-pointer border border-zinc-700 break-words ${selectedPhrases.includes(phrase) ? 'selected' : ''}">${phrase}</div>
-      `).join('');
-    }
+                  {/* phrase list */}
+                  <div style={{ flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"6px 14px calc(env(safe-area-inset-bottom,16px) + 90px)",display:"flex",flexWrap:"wrap",gap:9,alignContent:"flex-start" }}>
 
-    function togglePhrase(phrase) {
-      if (selectedPhrases.includes(phrase)) selectedPhrases = selectedPhrases.filter(p => p !== phrase);
-      else selectedPhrases.push(phrase);
-      updateOutput();
-      if (currentModule && currentCategory) loadPhrases(currentModule, currentCategory);
-    }
+                    {filtered.map((phrase,idx)=>{
+                      const origIdx = curCat.phrases.indexOf(phrase);
+                      const inA = assembled.includes(phrase);
+                      return (
+                        <div key={`${phrase}-${idx}`} style={{ display:"flex",alignItems:"stretch" }}>
+                          <TapBtn
+                            onClick={()=>addPhrase(phrase)}
+                            style={{
+                              padding:"11px 15px",
+                              borderRadius: editMode?"12px 0 0 12px":12,
+                              border:`1.5px solid ${inA?"rgba(219,39,119,.55)":C.border}`,
+                              borderRight: editMode?"none":undefined,
+                              background: inA?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)",
+                              color: inA?C.text:"rgba(240,214,232,.8)",
+                              fontSize:14, fontFamily:MONO,
+                              display:"flex",alignItems:"center",gap:6,userSelect:"none",
+                            }}
+                            onTouchStart={e=>{ if(!inA) e.currentTarget.style.background="rgba(219,39,119,.12)"; }}
+                            onTouchEnd={e=>{ e.currentTarget.style.background=inA?"rgba(219,39,119,.18)":"rgba(219,39,119,.05)"; }}
+                          >
+                            {inA && <span style={{ color:C.pink,fontSize:11 }}>✓</span>}
+                            {phrase}
+                          </TapBtn>
+                          {editMode && (
+                            <TapBtn
+                              onClick={()=>setEditTarget({moduleId:curMod.id,catId:curCat.id,idx:origIdx,phrase,moduleName:curMod.label,catName:curCat.label})}
+                              style={{ padding:"11px 12px",borderRadius:"0 12px 12px 0",border:`1.5px solid ${C.border}`,borderLeft:"none",background:"rgba(219,39,119,.08)",color:"rgba(219,39,119,.65)",display:"flex",alignItems:"center" }}>
+                              <IEdit/>
+                            </TapBtn>
+                          )}
+                        </div>
+                      );
+                    })}
 
-    function updateOutput() {
-      document.getElementById('prompt-output').value = selectedPhrases.join(', ');
-      document.getElementById('selected-count').textContent = selectedPhrases.length;
-    }
+                    {/* add phrase */}
+                    {editMode && (
+                      <TapBtn
+                        onClick={()=>setAddTarget({moduleId:curMod.id,catId:curCat.id,moduleName:curMod.label,catName:curCat.label})}
+                        style={{ padding:"11px 15px",borderRadius:12,border:"1.5px dashed rgba(219,39,119,.32)",background:"rgba(219,39,119,.04)",color:"rgba(219,39,119,.6)",fontSize:14,fontFamily:MONO,display:"flex",alignItems:"center",gap:7 }}>
+                        <IPlus/> 新增短语
+                      </TapBtn>
+                    )}
 
-    function copyPrompt() {
-      const text = document.getElementById('prompt-output').value;
-      if (!text) return alert('还没有选择任何提示词！');
-      navigator.clipboard.writeText(text).then(() => alert('✅ 已复制到剪贴板！'));
-    }
+                    {search && filtered.length===0 && (
+                      <div style={{ width:"100%",textAlign:"center",color:"rgba(240,214,232,.22)",fontSize:14,padding:"32px 0" }}>
+                        没有匹配「{search}」的结果
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
-    function clearAll() {
-      if (confirm('确定清空所有已选提示词吗？')) {
-        selectedPhrases = []; updateOutput();
-        if (currentModule && currentCategory) loadPhrases(currentModule, currentCategory);
-      }
-    }
+              {!curCat && (
+                <div style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",opacity:.3 }}>
+                  <div style={{ fontSize:14,color:C.text }}>↑ 请选择上方种类</div>
+                </div>
+              )}
+            </div>
+          )}
 
-    function toggleEditMode() {
-      editMode = !editMode;
-      const btn = document.getElementById('edit-btn');
-      btn.innerHTML = editMode ? '<i class="fas fa-check"></i> <span>完成</span>' : '<i class="fas fa-edit"></i> <span>编辑</span>';
-      btn.classList.toggle('bg-emerald-600', editMode);
-      btn.classList.toggle('bg-amber-600', !editMode);
-      if (currentModule && currentCategory) loadPhrases(currentModule, currentCategory);
-    }
+          {/* ══ BOTTOM BAR ══════════════════════════════════ */}
+          <div style={{
+            position:"absolute", bottom:0, left:0, right:0,
+            background:"rgba(8,0,6,.94)",
+            backdropFilter:"blur(28px)", WebkitBackdropFilter:"blur(28px)",
+            borderTop:`1px solid ${C.border}`,
+            padding:`10px 14px env(safe-area-inset-bottom,20px)`,
+            display:"flex", gap:10, alignItems:"center",
+            zIndex:500,
+          }}>
+            {/* Prompt pill */}
+            <TapBtn onClick={()=>setShowPrompt(true)} style={{
+              flex:1, height:54, borderRadius:15,
+              border:`1.5px solid ${assembled.length?"rgba(219,39,119,.4)":C.border}`,
+              background:assembled.length?"rgba(219,39,119,.14)":"rgba(219,39,119,.04)",
+              color:assembled.length?C.text:C.muted,
+              display:"flex",alignItems:"center",gap:10,padding:"0 16px",
+            }}>
+              <span style={{ display:"flex",opacity:.7 }}><IBubble/></span>
+              <span style={{ fontSize:15,fontWeight:assembled.length?700:400,flex:1,textAlign:"left" }}>
+                {assembled.length ? `已选 ${assembled.length} 条` : "查看 Prompt"}
+              </span>
+              {assembled.length>0 && (
+                <span style={{ minWidth:24,height:24,background:`linear-gradient(135deg,${C.pink},#be185d)`,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0 }}>
+                  {assembled.length}
+                </span>
+              )}
+            </TapBtn>
 
-    function editPhrase(phrase, index) {
-      editingInfo = { module: currentModule, category: currentCategory, oldPhrase: phrase, index: index };
-      document.getElementById('edit-input').value = phrase;
-      document.getElementById('modal').classList.remove('hidden');
-      document.getElementById('edit-input').focus();
-    }
+            {/* Quick copy */}
+            <TapBtn onClick={handleCopy} disabled={!assembled.length} style={{
+              width:54,height:54,borderRadius:15,border:"none",
+              background:assembled.length?`linear-gradient(135deg,${C.pink},${C.pinkD})`:"rgba(219,39,119,.09)",
+              color:assembled.length?"#fff":"rgba(255,255,255,.2)",
+              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+              boxShadow:assembled.length?"0 4px 20px rgba(219,39,119,.38)":"none",
+            }}>
+              {copied ? <ICheck/> : <ICopy/>}
+            </TapBtn>
+          </div>
 
-    function saveEdit() {
-      const newText = document.getElementById('edit-input').value.trim();
-      if (!newText || !editingInfo) return;
-      const { module, category, oldPhrase, index } = editingInfo;
-      promptData[module][category][index] = newText;
-      if (selectedPhrases.includes(oldPhrase)) selectedPhrases = selectedPhrases.map(p => p === oldPhrase ? newText : p);
-      closeModal(); loadPhrases(module, category); updateOutput();
-    }
+        </div>{/* /body */}
+      </div>{/* /app */}
 
-    function deleteCurrentPhrase() {
-      if (!editingInfo || !confirm('确定删除这条提示词吗？')) return;
-      const { module, category, oldPhrase, index } = editingInfo;
-      promptData[module][category].splice(index, 1);
-      selectedPhrases = selectedPhrases.filter(p => p !== oldPhrase);
-      closeModal(); loadPhrases(module, category); updateOutput();
-    }
-
-    function closeModal() {
-      document.getElementById('modal').classList.add('hidden');
-      editingInfo = null;
-    }
-
-    function init() {
-      renderModuleNav();
-      loadModule("01-场景主题");
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeModal();
-      });
-    }
-    window.onload = init;
-  </script>
-</body>
-</html>
+      {/* ── OVERLAYS ── */}
+      {showPrompt  && <PromptSheet assembled={assembled} onRemove={removePhrase} onCopy={handleCopy} onClear={()=>{setAssembled([]);flash("已清空");}} onClose={()=>setShowPrompt(false)} copied={copied}/>}
+      {editTarget  && <EditSheet  target={editTarget} onSave={saveEdit} onDelete={delEdit} onClose={()=>setEditTarget(null)}/>}
+      {addTarget   && <AddSheet   moduleName={addTarget.moduleName} catName={addTarget.catName} onAdd={addNew} onClose={()=>setAddTarget(null)}/>}
+      <Toast msg={toast.msg} visible={toast.v}/>
+    </>
+  );
+}
