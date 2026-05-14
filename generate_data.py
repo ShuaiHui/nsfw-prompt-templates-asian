@@ -22,71 +22,118 @@ MODULE_MAP = {
     "14-人格卡片": ("14", "14-人格卡片", "🪪"),
 }
 
-def extract_phrases_from_md(filepath):
-    try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            text = f.read()
-    except:
-        return []
-    phrases = set()
-    lines = text.splitlines()
-    for line in lines:
-        if not re.search(r'[a-zA-Z]', line):
+def extract_phrases_from_segment(text):
+    """
+    从一段文本中提取英文短语，并附带可能的中文注解。
+    返回 [{ "t": 短语, "n": 注解或空字符串 }]
+    """
+    results = []
+    # 1. 尝试解析表格：假设有两列或三列，第一列为英文，第二列为中文
+    table_rows = re.findall(r'^\|(.+)\|$', text, re.MULTILINE)
+    for row in table_rows:
+        cells = [c.strip() for c in row.split('|')]
+        # 过滤掉表头分隔行（如 |---|---|）
+        if all(re.fullmatch(r'[-:\s]+', c) for c in cells if c):
             continue
-        cells = line.split('|')
+        eng = None
+        zh = ""
         for cell in cells:
-            cell = cell.strip()
-            if not re.search(r'[\u4e00-\u9fff]', cell) and len(cell) > 2 and re.search(r'[a-zA-Z]', cell):
-                clean = re.sub(r'\*\*|__|~~|`|\[|\]|\(|\)', '', cell).strip()
-                if re.match(r'^[\w\-\.\+\(\)\:\;\,\'\"\s]{3,}$', clean):
-                    phrases.add(clean.lower())
-    list_pattern = re.findall(r'^[\-\*]\s+([\w\-\.\+\(\)\:\;\,\'\"\s]{3,})$', text, re.MULTILINE)
-    for item in list_pattern:
-        clean = item.strip()
-        if not re.search(r'[\u4e00-\u9fff]', clean) and len(clean) > 2:
-            phrases.add(clean.lower())
-    code_blocks = re.findall(r'```[\s\S]*?```', text)
-    for block in code_blocks:
-        content = re.sub(r'```\w*', '', block).replace('```', '')
-        for part in re.split(r'[,\n]', content):
-            part = part.strip()
-            if part and not re.search(r'[\u4e00-\u9fff]', part) and len(part) > 2:
-                phrases.add(part.lower())
-    eng_snippets = re.findall(r'\b([a-zA-Z][\w\-\.\+\(\)\:\;\,\'\"\s]{2,50})\b', text)
-    for snippet in eng_snippets:
-        snippet = snippet.strip()
-        if snippet and len(snippet) > 2 and not re.search(r'[\u4e00-\u9fff]', snippet):
-            if snippet.lower() not in ('the','and','for','with','from','that','this','have','has','had','not','but','are','was','were','been','can','may','will','would','could','should','make','made','making'):
-                phrases.add(snippet.lower())
-    final = sorted(list(phrases))
-    final = [p for p in final if 2 < len(p) < 80 and re.search(r'[a-zA-Z]{2,}', p)]
+            if re.search(r'[a-zA-Z]', cell) and not re.search(r'[\u4e00-\u9fff]', cell):
+                eng = cell.strip()
+            elif re.search(r'[\u4e00-\u9fff]', cell):
+                zh = cell.strip()
+        if eng and len(eng) > 2:
+            results.append({"t": eng, "n": zh})
+
+    # 2. 解析列表项：- english phrase 中文解释
+    list_items = re.findall(r'^[\-\*]\s+(.+)$', text, re.MULTILINE)
+    for item in list_items:
+        # 尝试按中文分隔符分割
+        parts = re.split(r'(?<=[a-zA-Z])\s+(?=[\u4e00-\u9fff])', item, maxsplit=1)
+        eng = parts[0].strip()
+        zh = parts[1].strip() if len(parts) > 1 else ""
+        if re.search(r'[a-zA-Z]', eng) and len(eng) > 2:
+            results.append({"t": eng, "n": zh})
+
+    # 3. 普通文本中的英文单词（去重，没有注解）
+    if not results:  # 仅当上面没提取到时回退
+        words = re.findall(r'\b[a-zA-Z][\w\-\.\+\(\)\:\;\,\'\"\s]{2,60}\b', text)
+        for w in words:
+            w = w.strip()
+            if w.lower() not in ('the','and','for','with','from','that','this','have','has','had','not','but','are','was','were','been','can','may','will','would','could','should','make','made','making'):
+                results.append({"t": w, "n": ""})
+
+    # 去重，保留首次出现的注解
+    seen = {}
+    final = []
+    for item in results:
+        t = item["t"].lower()
+        if t not in seen:
+            seen[t] = True
+            final.append(item)
     return final
 
-def build_module_from_files(prefix, mod_id, label, icon):
-    candidates = [f for f in os.listdir(MD_DIR) if f.startswith(prefix) and f.endswith('.md')]
-    if not candidates:
-        return None
-    filepath = os.path.join(MD_DIR, candidates[0])
-    phrases = extract_phrases_from_md(filepath)
-    if not phrases:
-        return None
-    categories = [{"id": f"{mod_id}-01", "label": f"{label}通用", "phrases": phrases}]
-    return {"id": mod_id, "label": label, "icon": icon, "categories": categories}
+def build_module(filepath, mod_id, label, icon):
+    with open(filepath, 'r', encoding='utf-8') as f:
+        text = f.read()
+
+    # 按二级标题分割
+    sections = re.split(r'^##\s+(.+)', text, flags=re.MULTILINE)
+    # 第一段是标题前的引言（忽略），后面成对出现标题+内容
+    categories = []
+    cat_id = 1
+    for i in range(1, len(sections), 2):
+        title = sections[i].strip()
+        content = sections[i+1] if (i+1) < len(sections) else ""
+        phrases = extract_phrases_from_segment(content)
+        if phrases:
+            categories.append({
+                "id": f"{mod_id}-{cat_id:02d}",
+                "label": title,  # 保留中文标题作为分类名
+                "phrases": phrases
+            })
+            cat_id += 1
+
+    # 如果没有二级标题，则整个文件作为一个分类
+    if not categories:
+        phrases = extract_phrases_from_segment(text)
+        if phrases:
+            categories = [{
+                "id": f"{mod_id}-01",
+                "label": "通用",
+                "phrases": phrases
+            }]
+
+    return {
+        "id": mod_id,
+        "label": label,
+        "icon": icon,
+        "categories": categories
+    } if categories else None
 
 def main():
     data = []
     for prefix, (mod_id, label, icon) in MODULE_MAP.items():
-        module = build_module_from_files(prefix, mod_id, label, icon)
-        if module:
-            data.append(module)
+        candidates = [f for f in os.listdir(MD_DIR) if f.startswith(prefix) and f.endswith('.md')]
+        if candidates:
+            filepath = os.path.join(MD_DIR, candidates[0])
+            module = build_module(filepath, mod_id, label, icon)
+            if module:
+                data.append(module)
+                total = sum(len(c['phrases']) for c in module['categories'])
+                print(f"✓ {label}: {len(module['categories'])} 分类, {total} 短语")
+
+    # 生成 JS
     js_code = "// 自动生成，请勿手动编辑\n"
     js_code += f"// 生成日期: {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}\n"
     js_code += "const DEFAULT_DATA = "
     js_code += json.dumps(data, ensure_ascii=False, indent=2)
     js_code += ";\n"
+
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(js_code)
-    print(f"生成完成，短语总数：{sum(len(m['categories'][0]['phrases']) for m in data)}")
+
+    print(f"\n数据已生成: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
