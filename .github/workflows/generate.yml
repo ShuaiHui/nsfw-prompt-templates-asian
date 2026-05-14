@@ -1,0 +1,30 @@
+name: Generate data from Markdown
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run generator script
+        run: python generate_data.py
+
+      - name: Commit generated file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add nprom_data.js
+          git diff --staged --quiet || (git commit -m "Auto-update nprom_data.js" && git push)
