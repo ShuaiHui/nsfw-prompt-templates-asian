@@ -11,97 +11,10 @@
 </head>
 <body>
   <div id="root"></div>
-
+<script src="nprom_data.js"></script>
   <script type="text/babel">
     /* ─── DATA ─────────────────────────────────────────────────────────────── */
-    const DEFAULT_DATA = [
-      { id:"00", label:"00-范例", icon:"✦",
-        categories:[
-          { id:"00-01", label:"基础示例", phrases:["masterpiece","best quality","ultra-detailed","8k uhd","photorealistic"] },
-          { id:"00-02", label:"质量标签", phrases:["highres","absurdres","extremely detailed","intricate details","sharp focus"] },
-        ]},
-      { id:"01", label:"01-场景主题", icon:"🏠",
-        categories:[
-          { id:"01-01", label:"室内场景", phrases:["bedroom","hotel room","bathroom","living room","studio apartment","luxury suite"] },
-          { id:"01-02", label:"室外场景", phrases:["rooftop","garden","balcony","beach","forest clearing","alley"] },
-          { id:"01-03", label:"特殊场景", phrases:["onsen","love hotel","changing room","school corridor","office after hours"] },
-        ]},
-      { id:"02", label:"02-景别构图", icon:"🎞",
-        categories:[
-          { id:"02-01", label:"景别", phrases:["close-up","medium shot","full body","cowboy shot","bust shot","extreme close-up"] },
-          { id:"02-02", label:"构图", phrases:["rule of thirds","centered composition","dutch angle","overhead view","from below","from behind"] },
-          { id:"02-03", label:"视角", phrases:["pov","first person view","bird's eye view","worm's eye view","side view"] },
-        ]},
-      { id:"03", label:"03-光线打光", icon:"☀️",
-        categories:[
-          { id:"03-01", label:"自然光", phrases:["sunlight","golden hour","moonlight","overcast light","dappled light","window light"] },
-          { id:"03-02", label:"人工光", phrases:["studio lighting","rim lighting","backlit","neon lights","candlelight","soft box lighting"] },
-          { id:"03-03", label:"光效",   phrases:["lens flare","volumetric lighting","god rays","bokeh","light particles","glowing"] },
-        ]},
-      { id:"04", label:"04-画风渲染", icon:"🎨",
-        categories:[
-          { id:"04-01", label:"写实风格", phrases:["photorealistic","hyperrealistic","cinematic","film grain","RAW photo","DSLR"] },
-          { id:"04-02", label:"插画风格", phrases:["anime style","manga style","cel shading","flat design","illustration","line art"] },
-          { id:"04-03", label:"渲染引擎", phrases:["unreal engine 5","octane render","cinema 4d","blender render","ray tracing"] },
-        ]},
-      { id:"05", label:"05-人物外貌", icon:"👤",
-        categories:[
-          { id:"05-01", label:"发型发色", phrases:["long black hair","short bob","twin tails","ponytail","bangs","wavy hair","brown hair"] },
-          { id:"05-02", label:"眼睛",   phrases:["large eyes","almond eyes","double eyelids","brown eyes","doe eyes"] },
-          { id:"05-03", label:"体型",   phrases:["slim","petite","athletic build","tall","hourglass figure"] },
-        ]},
-      { id:"06", label:"06-服装配饰", icon:"👗",
-        categories:[
-          { id:"06-01", label:"日常服装", phrases:["school uniform","office wear","casual wear","sundress","jeans and t-shirt"] },
-          { id:"06-02", label:"特殊服装", phrases:["qipao","kimono","yukata","maid outfit","nurse uniform","bunny suit"] },
-          { id:"06-03", label:"配饰",   phrases:["choker","earrings","hair ribbon","glasses","anklet","bracelet"] },
-        ]},
-      { id:"07", label:"07-表情神态", icon:"😊",
-        categories:[
-          { id:"07-01", label:"基础表情", phrases:["smile","shy expression","surprised","blushing","pouting","serious"] },
-          { id:"07-02", label:"情绪状态", phrases:["confident","embarrassed","playful","dreamy","seductive look","innocent"] },
-        ]},
-      { id:"08", label:"08-姿势动作", icon:"🧍",
-        categories:[
-          { id:"08-01", label:"站姿", phrases:["standing","leaning against wall","hands on hips","arms crossed","one hand raised"] },
-          { id:"08-02", label:"坐姿", phrases:["sitting","kneeling","cross-legged","sitting on bed","perched on edge"] },
-          { id:"08-03", label:"躺姿", phrases:["lying down","lying on back","curled up","sprawled","side-lying"] },
-        ]},
-      { id:"09", label:"09-色调滤镜", icon:"🎭",
-        categories:[
-          { id:"09-01", label:"冷暖色调", phrases:["warm tones","cool tones","golden tones","blue hour","rose tint"] },
-          { id:"09-02", label:"特效滤镜", phrases:["vignette","chromatic aberration","film grain","bloom effect","desaturated"] },
-          { id:"09-03", label:"整体基调", phrases:["dreamy atmosphere","moody","vibrant","soft pastel","high contrast","cinematic grade"] },
-        ]},
-      { id:"10", label:"10-镜头参数", icon:"📷",
-        categories:[
-          { id:"10-01", label:"焦距",     phrases:["35mm lens","50mm lens","85mm lens","135mm portrait lens","wide angle 24mm"] },
-          { id:"10-02", label:"光圈景深", phrases:["f/1.4 bokeh","f/1.8 depth of field","shallow depth of field","deep focus","tilt-shift"] },
-          { id:"10-03", label:"快门效果", phrases:["motion blur","frozen motion","long exposure","crisp detail"] },
-        ]},
-      { id:"11", label:"11-负面提示", icon:"🚫",
-        categories:[
-          { id:"11-01", label:"质量负面", phrases:["(worst quality:2)","(low quality:2)","blurry","jpeg artifacts","watermark","text"] },
-          { id:"11-02", label:"解剖负面", phrases:["bad anatomy","extra limbs","missing fingers","distorted face","deformed hands"] },
-          { id:"11-03", label:"其他负面", phrases:["ugly","duplicate","error","out of frame","cropped","username"] },
-        ]},
-      { id:"12", label:"12-氛围道具", icon:"🌸",
-        categories:[
-          { id:"12-01", label:"道具物品", phrases:["wine glass","book","coffee cup","smartphone","rose","candle"] },
-          { id:"12-02", label:"环境元素", phrases:["cherry blossoms","rain drops","city lights","starry sky","snow","autumn leaves"] },
-        ]},
-      { id:"13", label:"13-LoRA权重", icon:"⚙️",
-        categories:[
-          { id:"13-01", label:"风格LoRA",  phrases:["<lora:add_detail:0.8>","<lora:more_details:0.5>","<lora:face_yiyi:0.7>"] },
-          { id:"13-02", label:"权重控制", phrases:["(phrase:1.2)","(phrase:1.5)","(phrase:0.8)","(phrase:0.5)","[[phrase]]","((phrase))"] },
-        ]},
-      { id:"14", label:"14-人格卡片", icon:"🪪",
-        categories:[
-          { id:"14-01", label:"基础人设", phrases:["1girl","solo","asian","japanese","chinese","korean"] },
-          { id:"14-02", label:"职业人设", phrases:["student","office lady","idol","model","nurse","teacher","stewardess"] },
-          { id:"14-03", label:"年龄标签", phrases:["young adult","adult","mature female","20s"] },
-        ]},
-    ];
+    
 
     const KEY = "pb_v3";
     const load = () => { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : DEFAULT_DATA; } catch { return DEFAULT_DATA; } };
